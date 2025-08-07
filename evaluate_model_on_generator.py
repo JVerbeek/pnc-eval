@@ -47,9 +47,6 @@ def main():
     generator_fn = import_object_from_string(args.generator)
     model_cls = import_object_from_string(args.model)
 
-    # Parse model kwargs
-    model_kwargs = json.loads(args.model_kwargs)
-
     # Instantiate model with kwargs
     model = model_cls(**model_kwargs)
 
@@ -58,14 +55,16 @@ def main():
 
     # Convert hyperparameter kwargs dict to a folder name
     if args.generator_hyperparameters:
+        # Create a concise, readable string from generator_kwargs for folder naming
+        import hashlib
+        # Use a hash of the kwargs string for a robust folder 
         generator_kwargs_str = json.dumps(generator_kwargs, sort_keys=True)
-        generator_kwargs_str = generator_kwargs_str.replace(' ', '_').replace(':', '_').replace(',', '_')
+        
+        hash_object = hashlib.sha256(generator_kwargs_str.encode())
+        generator_kwargs_str = hash_object.hexdigest()[:32] #technically not unique, but hopefully fine
 
-        # Shorten the generator_kwargs_str to avoid long folder names, keep the first 2 characters of every dict key:
-        generator_kwargs_str = '_'.join([f"{k[:2]}{v}" for k, v in json.loads(generator_kwargs_str).items()])
     else:
         generator_kwargs_str = "default"
-
 
     generated_data_folder = os.path.join("generated_data", args.generator.replace('.', '_'), generator_kwargs_str)
 
