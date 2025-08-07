@@ -1,0 +1,100 @@
+
+import argparse
+import importlib
+import json
+import os
+import yaml
+import sys
+
+
+def import_object_from_string(dotted_path):
+    """Import an object (function, class, etc.) from a dotted module path like 'module.submodule.func'."""
+    module_path, obj_name = dotted_path.rsplit(".", 1)
+    module = importlib.import_module(module_path)
+    return getattr(module, obj_name)
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--generator', required=True, help='Dotted path to the generator function')
+    parser.add_argument('--model', required=True, help='Dotted path to the model function')
+    parser.add_argument('--model-hyperparameters', default=None, help='YAML file of keyword arguments for the model class (default: None, use empty dict)')
+    parser.add_argument('--generator-hyperparameters', default=None, help='YAML file of keyword arguments for the generator function (default: None, use empty dict)') args = parser.parse_args()
+
+    # Dynamically import functions
+    generator_fn = import_object_from_string(args.generator)
+    model_fn = import_object_from_string(args.model)
+
+    # Use the generator and model
+    # Parse model and generator kwargs from YAML 
+    # If the files are not provided, use empty dicts as kwargs
+    # Load model hyperparameters
+    if args.model_hyperparameters and os.path.isfile(args.model_hyperparameters):
+        with open(args.model_hyperparameters, "r") as f:
+            model_kwargs = yaml.safe_load(f) or {}
+    else:
+        model_kwargs = {}
+
+    # Load generator hyperparameters
+    if args.generator_hyperparameters and os.path.isfile(args.generator_hyperparameters):
+        with open(args.generator_hyperparameters, "r") as f:
+            generator_kwargs = yaml.safe_load(f) or {}
+    else:
+        generator_kwargs = {}
+
+    # Import generator function and model class
+    generator_fn = import_object_from_string(args.generator)
+    model_cls = import_object_from_string(args.model)
+
+    # Parse model kwargs
+    model_kwargs = json.loads(args.model_kwargs)
+
+    # Instantiate model with kwargs
+    model = model_cls(**model_kwargs)
+
+    # Training
+    # Check if data has been generated before:
+
+    # Convert hyperparameter kwargs dict to a folder name
+    if args.generator_hyperparameters:
+        generator_kwargs_str = json.dumps(generator_kwargs, sort_keys=True)
+        generator_kwargs_str = generator_kwargs_str.replace(' ', '_').replace(':', '_').replace(',', '_')
+
+        # Shorten the generator_kwargs_str to avoid long folder names, keep the first 2 characters of every dict key:
+        generator_kwargs_str = '_'.join([f"{k[:2]}{v}" for k, v in json.loads(generator_kwargs_str).items()])
+    else:
+        generator_kwargs_str = "default"
+
+
+    generated_data_folder = os.path.join("generated_data", args.generator.replace('.', '_'), generator_kwargs_str)
+
+    X_file = os.path.join(generated_data_folder, "X_train.npz")
+    y_file = os.path.join(generated_data_folder, "y_train.npz")
+    os.makedirs(generated_data_folder, exist_ok=True)
+
+    if not os.path.exists(X_file) or not os.path.exists(y_file):
+        X_train, y_train = generator_fn(**generator_kwargs)
+        # note:output of both X_train and y_train are n_D-by-t numpy arrays
+        # Save the generated data
+        np.savez_compressed(X_file, X_train)
+        np.savez_compressed(y_file, y_train)
+    else:
+        # Load the generated data
+        X_train = np.load(X_file)
+        y_train = np.load(y_file)
+
+    #model.fit(X_train, y_train)
+
+# For testing purposes, provide defaults if not running as a script
+
+# if __name__ == "__main__":
+#     main()
+
+if __name__ == "__main__":
+    sys.argv = [
+        sys.argv[0],
+        "--generator", "src.data_generators.mean_change.generate_mean_change",
+        "--model", "src.models.model.GPRModel",
+        # "--model-hyperparameters", "path/to/model_hyperparams.yaml",
+        "--generator-hyperparameters", "mean_change_example.yaml"
+    ]
+    main()
