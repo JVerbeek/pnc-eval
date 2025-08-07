@@ -5,6 +5,7 @@ import json
 import os
 import yaml
 import sys
+import numpy as np
 
 
 def import_object_from_string(dotted_path):
@@ -18,7 +19,8 @@ def main():
     parser.add_argument('--generator', required=True, help='Dotted path to the generator function')
     parser.add_argument('--model', required=True, help='Dotted path to the model function')
     parser.add_argument('--model-hyperparameters', default=None, help='YAML file of keyword arguments for the model class (default: None, use empty dict)')
-    parser.add_argument('--generator-hyperparameters', default=None, help='YAML file of keyword arguments for the generator function (default: None, use empty dict)') args = parser.parse_args()
+    parser.add_argument('--generator-hyperparameters', default=None, help='YAML file of keyword arguments for the generator function (default: None, use empty dict)') 
+    args = parser.parse_args()
 
     # Dynamically import functions
     generator_fn = import_object_from_string(args.generator)
