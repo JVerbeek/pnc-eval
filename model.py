@@ -1,7 +1,7 @@
 import abc
 import gpflow as gpf
 import numpy as np
-
+from score_functions import cusum_score
 
 class RegressionModel(abc.ABC):
     def __init__(self, model):
@@ -18,14 +18,6 @@ class RegressionModel(abc.ABC):
 
     @abc.abstractmethod
     def predict_and_score(Xtest, ytest):
-        pass
-
-    def cusum_score(self, predictions, targets):
-        n = len(predictions)
-        m = len(targets)
-        cusum_score = np.cumsum((predictions - targets) ** 2 / m)
-        # changepoints = min(np.where(cusum_score > self.cusum_threshold)) / n
-        return cusum_score
 
 
 class GPRModel(RegressionModel):
@@ -49,6 +41,6 @@ class GPRModel(RegressionModel):
 
     def predict_and_score(self, X_test, y_test):
         ymean, yvar = self.predict(X_test, y_test, return_latent=False)
-        score = self.cusum_score(ymean, y_test)
+        score = cusum_score(ymean, y_test)
         return score
 
