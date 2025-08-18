@@ -6,28 +6,26 @@ import gpflow as gpf
 import abc
 
 class Slider():   # Look ma, a strategy pattern! 
-    def __init__(self, regressor: RegressionModel, X, y):
+    def __init__(self, regressor: RegressionModel, data: tuple):
         self.regressor = regressor
-        self.data = (X, y)
-        self.data_length = len(X)
+        self.data = data
+        self.data_length = len(data[0])
 
     @abc.abstractmethod
-    def do_slide(self, timeseries, *args):
+    def do_slide(self, window_size):
         pass
 
 class MirrorSlider(Slider):
-    pass
+    def do_slide(self, window_size):
+        pass
 
 class NonOverlappingWindowSlider(Slider):
-    def __init__(self, regressor, X, y):
-        super().__init__(regressor, X, y)
-
     def get_window_train_test(self, window_start, window_stop, window):
-        X, y = self.data
-        Xtrain = X[window_start:window_stop].reshape(-1, 1)
-        ytrain = y[window_start:window_stop].reshape(-1, 1)
-        Xtest = X[window_stop:window_stop+window].reshape(-1, 1)
-        ytest = y[window_stop:window_stop+window].reshape(-1, 1)
+        Xall, yall = self.data
+        Xtrain = Xall[window_start:window_stop].reshape(-1, 1)
+        ytrain = yall[window_start:window_stop].reshape(-1, 1)
+        Xtest = Xall[window_stop:window_stop+window].reshape(-1, 1)
+        ytest = yall[window_stop:window_stop+window].reshape(-1, 1)
         return Xtrain, Xtest, ytrain, ytest
     
     def do_slide(self, window_size):
@@ -48,15 +46,14 @@ class NonOverlappingWindowSlider(Slider):
         return scores
 
 if __name__ == "__main__":
-    data = np.load("test_change_type.npz")
-    X, y = data["Xs"][42], data["ys"][42]
+    test_data = np.load("test_change_type.npz")
+    X, y = test_data["Xs"][42], test_data["ys"][42]
     mod = GPRModel(gpf.models.GPR(
         (np.ones((2, 1)), np.ones((2, 1))), kernel=gpf.kernels.RBF()))
     
-    slider = NonOverlappingWindowSlider(mod, X, y)
-    scores = slider.do_slide(10)
-   
+    slider = NonOverlappingWindowSlider(mod, (X, y))
+    cusum_scores = slider.do_slide(10) 
     plt.plot(X, y)
-    plt.plot(X, scores)
+    plt.plot(X, cusum_scores)
     plt.show()
     
