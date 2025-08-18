@@ -1,5 +1,7 @@
 import numpy as np 
 from model import RegressionModel, GPRModel
+
+import matplotlib.pyplot as plt 
 import gpflow as gpf
 import abc
 
@@ -54,7 +56,6 @@ if __name__ == "__main__":
     slider = NonOverlappingWindowSlider(mod, X, y)
     scores = slider.do_slide(10)
    
-    import matplotlib.pyplot as plt 
     plt.plot(X, y)
     plt.plot(X, scores)
     plt.show()

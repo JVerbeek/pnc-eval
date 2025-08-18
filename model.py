@@ -18,6 +18,7 @@ class RegressionModel(abc.ABC):
 
     @abc.abstractmethod
     def predict_and_score(Xtest, ytest):
+        pass
 
 
 class GPRModel(RegressionModel):
