@@ -9,15 +9,15 @@ class RegressionModel(abc.ABC):
         self.cusum_threshold = 0.1
 
     @abc.abstractmethod
-    def fit(Xtrain, ytrain):
+    def fit(self, Xtrain, ytrain):
         pass
 
     @abc.abstractmethod
-    def predict(Xtest, ytest):
+    def predict(self, Xtest, ytest):
         pass
 
     @abc.abstractmethod
-    def predict_and_score(Xtest, ytest):
+    def predict_and_score(self, Xtest, ytest):
         pass
 
 
