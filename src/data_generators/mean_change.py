@@ -4,7 +4,7 @@ import scipy
 import yaml
  
 def generate_mean_change(**params):
-    """Generate data"""
+    """Generate mean change data with particular params (dict)."""
     Xs, ys = [], []
     for _ in range(params["n_datasets"]):
         change_magnitude = np.random.randint(-10, 10)   # Uniform, for now
