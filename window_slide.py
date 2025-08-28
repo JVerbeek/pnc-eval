@@ -1,5 +1,7 @@
 import numpy as np 
-from model import RegressionModel, GPRModel
+import sys
+sys.path.append("src")
+from models.model import RegressionModel, GPRModel, SKLearnModel
 
 import matplotlib.pyplot as plt 
 import gpflow as gpf
@@ -33,9 +35,10 @@ class NonOverlappingWindowSlider(Slider):
         window_stop = window_size
         scores = np.empty((10, 1))  # The first training window has no score.
         
-        while window_stop < self.data_length + window_size:
+        while window_stop < self.data_length:
             Xtrain, Xtest, ytrain, ytest = self.get_window_train_test(window_start, window_stop, window_size)
             self.regressor.fit(Xtrain, ytrain)
+            print(Xtest.shape)
             score = self.regressor.predict_and_score(
                 Xtest, ytest).reshape(-1, 1)
             scores = np.concatenate((scores, score))
@@ -48,8 +51,7 @@ class NonOverlappingWindowSlider(Slider):
 if __name__ == "__main__":
     test_data = np.load("test_change_type.npz")
     X, y = test_data["Xs"][42], test_data["ys"][42]
-    mod = GPRModel(gpf.models.GPR(
-        (np.ones((2, 1)), np.ones((2, 1))), kernel=gpf.kernels.RBF()))
+    mod = SKLearnModel()
     
     slider = NonOverlappingWindowSlider(mod, (X, y))
     cusum_scores = slider.do_slide(10) 

@@ -1,7 +1,7 @@
 import abc
 import gpflow as gpf
 from score_functions import cusum_score
-
+from sklearn.linear_model import LinearRegression
 class RegressionModel(abc.ABC):
     def __init__(self, model):
         self.model = model
@@ -39,5 +39,21 @@ class GPRModel(RegressionModel):
     def predict_and_score(self, Xtest, ytest):
         ymean, _ = self.predict(Xtest)
         score = cusum_score(ymean, ytest)
+        return score
+    
+    
+class SKLearnModel(RegressionModel):
+    def __init__(self, model=LinearRegression()):
+        super().__init__(model)
+        
+    def fit(self, Xtrain, ytrain):
+        return self.model.fit(Xtrain, ytrain)
+
+    def predict(self, Xtest):
+        return self.model.predict(Xtest)
+        
+    def predict_and_score(self, Xtest, ytest):
+        y_hat = self.predict(Xtest)
+        score = cusum_score(y_hat, ytest)
         return score
 
