@@ -94,7 +94,7 @@ if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
         "--generator", "src.data_generators.mean_change.generate_mean_change",
-        "--model", "src.models.model.GPRModel",
+        "--model", "src.models.model.SKLearnModel",
         # "--model-hyperparameters", "path/to/model_hyperparams.yaml",
         "--generator-hyperparameters", "mean_change_example.yaml"
     ]
