@@ -37,7 +37,7 @@ class GPRModel(RegressionModel):
         return ymean, yvar
 
     def predict_and_score(self, Xtest, ytest):
-        ymean, _ = self.predict(Xtest, ytest)
+        ymean, _ = self.predict(Xtest)
         score = cusum_score(ymean, ytest)
         return score
 
