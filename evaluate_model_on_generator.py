@@ -17,14 +17,13 @@ def import_object_from_string(dotted_path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--generator', required=True, help='Dotted path to the generator function')
+    parser.add_argument('--generator-hyperparameters', default=None, help='YAML file of keyword arguments for the generator function (default: None, use empty dict)') 
     parser.add_argument('--model', required=True, help='Dotted path to the model function')
     parser.add_argument('--model-hyperparameters', default=None, help='YAML file of keyword arguments for the model class (default: None, use empty dict)')
-    parser.add_argument('--generator-hyperparameters', default=None, help='YAML file of keyword arguments for the generator function (default: None, use empty dict)') 
-    args = parser.parse_args()
+    parser.add_argument('--metric', default='metrics.metrics.f1_score', help='Metric to optimize threshold on (default: f1)')
+    parser.add_argument('--score-function', default='score_functions.cusum.cusum_score', help='Score function to convert regression output to scores (default: cusum)')
 
-    # Dynamically import functions
-    generator_fn = import_object_from_string(args.generator)
-    model_fn = import_object_from_string(args.model)
+    args = parser.parse_args()
 
     # Use the generator and model
     # Parse model and generator kwargs from YAML 
@@ -46,9 +45,12 @@ def main():
     # Import generator function and model class
     generator_fn = import_object_from_string(args.generator)
     model_cls = import_object_from_string(args.model)
+    metric = import_object_from_string(args.metric)
+    score_function = import_object_from_string(args.score_function)
+    
 
-    # Instantiate model with kwargs
-    model = model_cls(**model_kwargs)
+    # Instantiate base model with kwargs
+    base_model = model_cls(**model_kwargs)
 
     # Training
     # Check if data has been generated before:
@@ -94,7 +96,7 @@ if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
         "--generator", "src.data_generators.mean_change.generate_mean_change",
-        "--model", "src.models.model.SKLearnModel",
+        "--model", "src.models.linear_regression.LinearRegressionModel",
         # "--model-hyperparameters", "path/to/model_hyperparams.yaml",
         "--generator-hyperparameters", "mean_change_example.yaml"
     ]
