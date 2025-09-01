@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.metrics import _binary_clf_curve
+from sklearn.metrics._ranking import _binary_clf_curve #import might not work in older sklearn versions, chimport needs to be conditional
 
 class ThresholdModel:
     # default metric is F1 score
@@ -9,14 +9,14 @@ class ThresholdModel:
         self.score_function = score_function
 
         self.threshold = None
-
-    #both X_train and y_train are n_D-by-t numpy arrays
+        
     # .fit scores based on submodel, then optimizes threshold based on the metric
     # the threshold is stored in self.threshold
     def fit(self, X_s, Y_s):
         _, scores = self.regress_and_score(X_s, Y_s)
 
-        self.fps, self.tps, self.thresholds = _binary_clf_curve(Y_s.flatten(), scores.flatten())
+        # Below flatten Y_s and scores to 1D numpy arrays
+        self.fps, self.tps, self.thresholds = _binary_clf_curve(np.vstack(Y_s).ravel(), np.vstack(scores).ravel(), pos_label=1)
         self.fns = self.tps[-1] - self.tps
         self.tns = self.fps[-1] - self.fps
 
@@ -24,13 +24,13 @@ class ThresholdModel:
         self.best_threshold_index = np.argmax(self.metric_per_threshold)
 
     def regress_and_score(self, X_s, Y_s):
-        scores = np.empty(Y_s.shape)
-        regressions = np.empty(Y_s.shape)
+        scores = []
+        regressions = []
 
-        for i in range(X_s.shape[0]):
-            regressions[i,:] = self.submodel.predict(X_s[i,:], Y_s[i,:])
+        for X, y in zip(X_s, Y_s):
+            regressions.append(self.submodel.predict(X))
 
-            scores[i,:] = self.score_function(regressions[i,:])
+            scores.append(self.score_function(regressions[-1], y).reshape(-1, 1))
 
         return regressions, scores
     

@@ -12,7 +12,3 @@ class RegressionModel(abc.ABC):
     @abc.abstractmethod
     def predict(self, Xtest):
         pass
-
-    @abc.abstractmethod
-    def predict_and_score(self, Xtest, ytest):
-        pass

@@ -1,5 +1,5 @@
 from sklearn.linear_model import LinearRegression
-from base_model import RegressionModel
+from .base_model import RegressionModel
     
 class LinearRegressionModel(RegressionModel):
     def __init__(self, model=LinearRegression()):

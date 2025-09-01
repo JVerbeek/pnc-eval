@@ -7,6 +7,9 @@ import yaml
 import sys
 import numpy as np
 
+#Temporary import until parsing is added
+from src.models.threshold_models.threshold_model import ThresholdModel
+
 
 def import_object_from_string(dotted_path):
     """Import an object (function, class, etc.) from a dotted module path like 'module.submodule.func'."""
@@ -20,8 +23,8 @@ def main():
     parser.add_argument('--generator-hyperparameters', default=None, help='YAML file of keyword arguments for the generator function (default: None, use empty dict)') 
     parser.add_argument('--model', required=True, help='Dotted path to the model function')
     parser.add_argument('--model-hyperparameters', default=None, help='YAML file of keyword arguments for the model class (default: None, use empty dict)')
-    parser.add_argument('--metric', default='metrics.metrics.f1_score', help='Metric to optimize threshold on (default: f1)')
-    parser.add_argument('--score-function', default='score_functions.cusum.cusum_score', help='Score function to convert regression output to scores (default: cusum)')
+    parser.add_argument('--metric', default='src.metrics.metrics.f1_score', help='Metric to optimize threshold on (default: f1)')
+    parser.add_argument('--score-function', default='src.score_functions.cusum.cusum_score', help='Score function to convert regression output to scores (default: cusum)')
 
     args = parser.parse_args()
 
@@ -47,10 +50,6 @@ def main():
     model_cls = import_object_from_string(args.model)
     metric = import_object_from_string(args.metric)
     score_function = import_object_from_string(args.score_function)
-    
-
-    # Instantiate base model with kwargs
-    base_model = model_cls(**model_kwargs)
 
     # Training
     # Check if data has been generated before:
@@ -77,15 +76,32 @@ def main():
     if not os.path.exists(X_file) or not os.path.exists(y_file):
         X_train, y_train = generator_fn(**generator_kwargs)
         # note:output of both X_train and y_train are n_D-by-t numpy arrays
-        # Save the generated data
-        np.savez_compressed(X_file, X_train)
-        np.savez_compressed(y_file, y_train)
+        # Save the generated data with explicit keys
+        np.savez_compressed(X_file, X_train=X_train)
+        np.savez_compressed(y_file, y_train=y_train)
     else:
-        # Load the generated data
-        X_train = np.load(X_file)
-        y_train = np.load(y_file)
+        # Load the generated data using explicit keys
+        X_train = np.load(X_file)['X_train']
+        y_train = np.load(y_file)['y_train']
 
-    #model.fit(X_train, y_train)
+
+
+    # Instantiate base model with kwargs
+    base_model = model_cls(**model_kwargs)
+
+
+    # TODO: add check if base_model needs to be fitted before passing to ThresholdModel
+    # Check here
+
+    # Wrap base model in ThresholdModel
+
+    model = ThresholdModel(base_model, score_function, metric)    
+
+    # Fit the threshold model
+    model.fit(X_train, y_train)
+
+    # Visualize the threshold optimization for testing purposes
+    model.visualize_optimization()
 
 # For testing purposes, provide defaults if not running as a script
 
@@ -96,7 +112,7 @@ if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
         "--generator", "src.data_generators.mean_change.generate_mean_change",
-        "--model", "src.models.linear_regression.LinearRegressionModel",
+        "--model", "src.models.regression_models.linear_regression.LinearRegressionModel",
         # "--model-hyperparameters", "path/to/model_hyperparams.yaml",
         "--generator-hyperparameters", "mean_change_example.yaml"
     ]
