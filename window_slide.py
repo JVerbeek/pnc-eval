@@ -51,11 +51,12 @@ class NonOverlappingWindowSlider(Slider):
 if __name__ == "__main__":
     test_data = np.load("test_change_type.npz")
     X, y = test_data["Xs"][42], test_data["ys"][42]
-    mod = SKLearnModel()
-    
+    #mod = SKLearnModel()
+    mod = GPRModel(model=gpf.models.GPR((X.reshape(-1, 1), y.reshape(-1, 1)), kernel=gpf.kernels.RBF()))
     slider = NonOverlappingWindowSlider(mod, (X, y))
     cusum_scores = slider.do_slide(10) 
     plt.plot(X, y)
-    plt.plot(X, cusum_scores)
+    plt.plot(X, (cusum_scores))
+    #plt.plot(X, (cusum_scores/10e228))
     plt.show()
     
