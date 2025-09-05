@@ -12,7 +12,7 @@ def freq_fn(f0, f1, location=0, stepped=False):  # Create function with either a
     if stepped:		    
 	    return lambda t: np.where(t < location, f0, f1)   
     else:
-        return lambda t: np.where(t < location, f0, ((f0 + (f1 - f0))*t)/ (max(t) - min(t)))
+        return lambda t: np.where(t < location, f0, ((f0 + (f1 - f0))*t) / (max(t) - min(t)))
 
 def amplitude_fn(a0, a1, location=0, stepped=False):   # Create function with gradual or stepped change in frequency
     if stepped:
@@ -30,7 +30,7 @@ def mean_fn(b=1.0, nu=1.0, stepped=False, location=0):   # Create function with 
     if stepped:
         return lambda t: np.where(t < location, 0, b)
     else:
-        return lambda t: (np.where(t < location, 0, b * t / (max(t)-min(t)))) ** nu
+        return lambda t: (np.where(t < location, 0, (b * t) / (max(t)-min(t)))) ** nu
     
 def generate_data_with_params(n_datapoints=100, params_freq={"f0": 100, "f1": 10}, params_amp={"a0" :10, "a1" :10}, params_noise={"sigma0":0.5, "sigma1":1.0, "nu":1}, params_perturbation={"b":0, "nu":1}, location=0, time_range=(0, 1), stepped=True, oscillating=True):
     ts, ys = [], []
@@ -46,8 +46,6 @@ def generate_data_with_params(n_datapoints=100, params_freq={"f0": 100, "f1": 10
             amp_fn = amplitude_fn(**params_amp, location=location, stepped=stepped)
             y += amp_fn(t) * np.cos(freq_fun(t) * t) + mean_fun(t) + noise_fun(t)
         else:   # else, it is a "regular" signal. 
-            #Observation: if the signal is a regular signal, a change in amplitude or frequency will be irrelevant,
-            #and we should perhaps filter on that
             y += noise_fun(t) + mean_fun(t)
         ys.append(y)
         ts.append(t)
@@ -61,18 +59,20 @@ def save_data_to_npz(Xs, ys, fn="test_change_type"):
     np.savez(fn, Xs=Xs, ys=ys)
     return fn
 
-def sample_perturbation():
-    return 0   # This should clearly be more sophisticated: the bias and the exponent should probably not be sampled from the same distribution, 
-               # but I also don't have a better idea at the moment. Same for exactly how to pass the distributions and their parameters to these functions.
+def sample_perturbation(time_range): 
+    return np.random.normal(0, 4)
 
-def sample_noise():
+def sample_exponent(time_range):
+    return np.random.random() + 0.01
+
+def sample_noise(time_range):
     return np.abs(np.random.normal(0, 4))
 
-def sample_freq():
-    return np.random.uniform(0, 40)
+def sample_freq(time_range):
+    return (np.random.uniform(1, time_range[1]) / time_range[1]) * (np.pi)
 
-def sample_amp():
-    return np.abs(np.random.normal(0, 3))
+def sample_amp(time_range):
+    return np.random.choice(np.arange(1, 20, 0.5))
 
 def get_param_keys(fname):
     if fname == "perturbation":
@@ -86,27 +86,37 @@ def get_param_keys(fname):
     return 
 
 def generate_parameters(n_datasets, n_datapoints, time_range):
-    stepped = np.random.randint(0, 2, n_datasets).astype(bool).tolist()
-    oscillating = np.random.randint(0, 2, n_datasets).astype(bool).tolist()
-    location = np.random.randint(0, n_datapoints, n_datasets)   # Sample random location in range
+    stepped = np.random.randint(0, 2, n_datasets).astype(bool).tolist()   # Sample whether change is abrupt or gradual.
+    oscillating = np.random.randint(0, 2, n_datasets).astype(bool).tolist()   # Sample whether data is oscillating.
+    location = np.random.randint(0, n_datapoints, n_datasets)   # Sample random location in range.
     
-    change_types = np.eye(4)[np.random.choice(4, n_datasets)]   # Randomize change types
+    change_types = np.eye(4)[np.random.choice(4, n_datasets)]   # Randomize change types one-hot.
+    
+    for i in range(n_datasets): # If the dataset should not oscillate and we sampled amplitude or frequency changes, reroll:
+        if not oscillating[i] and np.any(change_types[2:]):
+            change_types[i][0:2] = np.eye(2)[np.random.choice(2, 1)]  # Assumes perturbation and noise are the first two columns of the change type matrix.
+            
     param_dict = {}
     
     for n in range(n_datasets):
         param_dict["dataset_"+str(n)] = {}
-        for i, f in enumerate([sample_perturbation, sample_freq, sample_amp, sample_noise]):
+        for i, f in enumerate([sample_perturbation, sample_noise, sample_amp, sample_freq]):
             fname = f.__name__.split("_")[-1]
-            val0 = f()  # Sample a value
-            val1 = val0 # Set second value to same value as first
-            if change_types[n][i] == 1:  # If the value of the random vector at that index is 1
-                val1 = f()  # set a different second value  (that will be the change)
+            val0 = f(time_range)  # Sample a value
+            if fname == "perturbation":
+                val1 = 0
+            else:
+                val1 = val0 # Set second value to same value as first
+            if change_types[n][i] == 1:  # If the value of the change type vector at that index is 1, that is the changing property
+                if fname == "perturbation":
+                    val1 = sample_exponent(time_range)
+                else:
+                    val1 = f(time_range)  # set a different second value  (that will be the change)
             keys = get_param_keys(fname)
             param_dict["dataset_"+str(n)]["params_"+fname] = dict(zip(keys, (val0, val1)))
     
         keys = ["stepped", "oscillating", "location", "n_datapoints", "time_range"]
-        param_dict["dataset_"+str(n)].update(dict(zip(keys, (stepped[n], oscillating[n], location[n], n_datapoints, time_range))))
-    
+        param_dict["dataset_"+str(n)].update(dict(zip(keys, (stepped[n], oscillating[n], location[n], n_datapoints, time_range)))) 
     return param_dict
 
 def generate_datasets(datapoints=10000, datasets=5, time_range=(0, 1)):
