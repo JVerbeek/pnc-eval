@@ -9,8 +9,8 @@ def generate_constant_signal(loc, scale, n_datapoints):
     return y 
 
 def freq_fn(f0, f1, location=0, stepped=False):  # Create function with either a gradual or a stepped change in frequency
-    if stepped:		    
-	    return lambda t: np.where(t < location, f0, f1)   
+    if stepped:
+        return lambda t: np.where(t < location, f0, f1)
     else:
         return lambda t: np.where(t < location, f0, ((f0 + (f1 - f0))*t) / (max(t) - min(t)))
 
@@ -24,8 +24,8 @@ def noise_fn(sigma0, sigma1, stepped=False, location=0, nu=1.0):   # Create func
     if stepped:
         return lambda t: np.where(t < location, sigma0, sigma1) 
     else:
-        return lambda t: np.where(t < location, sigma0, ((sigma0 + (sigma1 - sigma0)) * t / (max(t)-min(t))) ** nu )
-                                  
+        return lambda t: np.where(t < location, sigma0, ((sigma0 + (sigma1 - sigma0)) * t / (max(t)-min(t))) ** nu)
+
 def mean_fn(b=1.0, nu=1.0, stepped=False, location=0):   # Create function with gradual or stepped change in mean (perturbation)
     if stepped:
         return lambda t: np.where(t < location, 0, b)
