@@ -75,9 +75,9 @@ def main():
 
     if not os.path.exists(X_file) or not os.path.exists(y_file):
         X_train, y_train = generator_fn(**generator_kwargs)
-        # note:output of both X_train and y_train are n_D-by-t numpy arrays
+        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
         # Save the generated data with explicit keys
-        np.savez_compressed(X_file, X_train=X_train)
+        np.savez_compressed(X_file, X_train=X_train) #check if this works for lists
         np.savez_compressed(y_file, y_train=y_train)
     else:
         # Load the generated data using explicit keys
@@ -87,17 +87,10 @@ def main():
 
 
     # Instantiate base model with kwargs
-    base_model = model_cls(**model_kwargs)
+    model = model_cls(**model_kwargs)
+    #- Kwargs at least include: window slider, regressor, aggregator, and thresholder
 
-
-    # TODO: add check if base_model needs to be fitted before passing to ThresholdModel
-    # Check here
-
-    # Wrap base model in ThresholdModel
-
-    model = ThresholdModel(base_model, score_function, metric)    
-
-    # Fit the threshold model
+    # Fit the model (finding parameters and threshold)
     model.fit(X_train, y_train)
 
     # Visualize the threshold optimization for testing purposes
