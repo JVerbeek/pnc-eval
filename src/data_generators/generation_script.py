@@ -22,24 +22,29 @@ def linear_increase_fn(first_param, second_param,  location, stepped, exponent=1
 
 def generate_data_with_params(**params):
     """Creates a signal with a change point. For the given parameters, creates functions with those parameters, and compiles a signal additively."""
-    print(params)
     stepped = params["stepped"]
     location = int(params["location"])
     t = np.linspace(*params["time_range"], params["n_datapoints"])
     time_index = t[location]
-    # This still includes a lot of duplication and I think it's not so nice
-    mean_fun = linear_increase_fn(*params["params_perturbation"], location=time_index, stepped=stepped)
-    noise_fun = linear_increase_fn(*params["params_noise"], location=time_index, stepped=stepped)
-    freq_fun = linear_increase_fn(*params["params_frequency"], location=time_index, stepped=stepped)
-    amp_fn = linear_increase_fn(*params["params_amplitude"], location=time_index, stepped=stepped)
+    glob_noise_dist = get_distribution(params["glob_noise_dist"])
+    glob_noise = sample_from_distribution(glob_noise_dist, params["glob_noise_params"])
 
-    if params["oscillating"]:  # if it is an oscillating signal, also generate & use frequencx and amplitude functions
-        x = amp_fn(t) * np.cos(freq_fun(t) * t) + mean_fun(t) + noise_fun(t) * ss.norm.rvs(0, 0.1, params["n_datapoints"])   # We only really care about this here
-    else:   # else, it is a "regular" signal. 
-        x = noise_fun(t) + mean_fun(t)
+    for p in params.keys():  # Update symbol table with appropriate function names
+        pname = p.split("_")
+        if pname[0] != "params":
+            continue
+        globals()[pname[1]+"_fun"] = linear_increase_fn(*params[p], location=time_index, stepped=stepped)
 
-    x[:location] -= x[location]
-    x[location:] -= np.abs(x[:location][-1])
+    if params["oscillating"]: # Function composition is something you have to be specific about
+        x = amplitude_fun(t) * np.cos(frequency_fun(t) * t) + perturbation_fun(t) + noise_fun(t) * ss.norm.rvs(0, 0.1, params["n_datapoints"])
+    else:
+        x = noise_fun(t) + ss.norm.rvs(0, 0.1, params["n_datapoints"]) + perturbation_fun(t)
+
+    if params["change_type"] == "perturbation": # (else you'd remove the step)
+        x[:location] -= x[:location][-1] - x[location]
+    elif params["change_type"] == "perturbation" and not params["stepped"]:  # then actually we do want the signals to attach
+        x[:location] -= x[:location][-1] - x[location]
+
     return t, x, location
 
 def save_data_to_npz(Xs, ys, fn="test_change_type"):

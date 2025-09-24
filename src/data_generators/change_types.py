@@ -10,5 +10,5 @@ CHANGE_PARAMS = {"perturbation": {"dist": "norm",
                  }
 
 
-PROPERTIES = {"change_type": "perturbation", "stepped": True, "oscillating": True, "location": 250, "time_range": (0, 1), "n_datapoints": 500}
+PROPERTIES = {"change_type": "perturbation", "stepped": True, "oscillating": False, "location": 250, "time_range": (0, 1), "n_datapoints": 500, "glob_noise_params": (0, 0.05), "glob_noise_dist": "norm"}
 # Yes, I know this is ugly and I am probably better of just writing yamls like God intended, but I really want to be able to test this quickly and not having to deal with file I/O is kind of nice.
