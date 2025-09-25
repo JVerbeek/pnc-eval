@@ -1,62 +1,65 @@
 import numpy as np 
-import sys
-sys.path.append("src")
-from models.regression_models.base_model import RegressionModel, GPRModel, SKLearnModel
 
-import matplotlib.pyplot as plt 
-import gpflow as gpf
 import abc
 
-class Slider():   # Look ma, a strategy pattern! 
-    def __init__(self, regressor: RegressionModel, data: tuple):
-        self.regressor = regressor
-        self.data = data
-        self.data_length = len(data[0])
+class Slider():   
+    def __init__(self, window_size, skip_length):
+        self.window_size = window_size
+        self.skip_length = skip_length
 
     @abc.abstractmethod
-    def do_slide(self, window_size):
+    def new_slide(self, X):
         pass
 
-# Not implemented yet
-# class MirrorSlider(Slider):
-#     def do_slide(self, window_size):
-#         pass
+    @abc.abstractmethod
+    def next_window(self):
+        pass
 
-class NonOverlappingWindowSlider(Slider):
-    def get_window_train_test(self, window_start, window_stop, window):
-        Xall, yall = self.data
-        Xtrain = Xall[window_start:window_stop].reshape(-1, 1)
-        ytrain = yall[window_start:window_stop].reshape(-1, 1)
-        Xtest = Xall[window_stop:window_stop+window].reshape(-1, 1)
-        ytest = yall[window_stop:window_stop+window].reshape(-1, 1)
-        return Xtrain, Xtest, ytrain, ytest
-    
-    def do_slide(self, window_size):
-        window_start = 0
-        window_stop = window_size
-        scores = np.empty((10, 1))  # The first training window has no score.
+class WindowSlider(Slider):
+    def __init__(self, window_size, skip_length):
+        super().__init__(window_size, skip_length)
+        self.current_position = 0
+        self.X = None
+
+        # Are used doubly with current_position, but this is hopefully more legible
+        self.window_start_index = None
+        self.window_end_index = None
+
+    def new_slide(self, X):
+        self.X = X
+        self.current_position = 0
+
+    def next_window(self):
+        if self.X is None:
+            raise ValueError("No data provided. Please call new_slide(X) before next_window().")
+        n = len(self.X)
+        while self.current_position + self.window_size <= n:
+            window = self.X[self.current_position:self.current_position + self.window_size]
+            self.window_start_index = self.current_position
+            self.window_end_index = self.current_position + self.window_size
+            self.current_position += self.skip_length
+            
+            yield window
+
+        # Yield the last, incomplete window if any data remains
+        if self.current_position < n:
+            window = self.X[self.current_position:n]
+            self.window_start_index = self.current_position
+            self.window_end_index = n
+            self.current_position = n  # Move to end
+            yield window
+
+    def get_window_indices(self):
+        if self.X is None:
+            raise ValueError("No data provided. Please call new_slide(X) before get_window_indices().")
         
-        while window_stop < self.data_length:
-            Xtrain, Xtest, ytrain, ytest = self.get_window_train_test(window_start, window_stop, window_size)
-            self.regressor.fit(Xtrain, ytrain)
-            print(Xtest.shape)
-            score = self.regressor.predict_and_score(
-                Xtest, ytest).reshape(-1, 1)
-            scores = np.concatenate((scores, score))
-            
-            window_start = window_stop   # Update window
-            window_stop = window_start + window_size
-            
-        return scores
+        if self.window_start_index is None or self.window_end_index is None:
+            raise ValueError("No window has been generated yet. Please call next_window() before get_window_indices().")
+        
+        return self.window_start_index, self.window_end_index
 
-if __name__ == "__main__":
-    test_data = np.load("test_change_type.npz")
-    X, y = test_data["Xs"][42], test_data["ys"][42]
-    mod = SKLearnModel()
-    
-    slider = NonOverlappingWindowSlider(mod, (X, y))
-    cusum_scores = slider.do_slide(10) 
-    plt.plot(X, y)
-    plt.plot(X, cusum_scores)
-    plt.show()
-    
+        
+
+class NonOverlappingWindowSlider(WindowSlider):
+    def __init__(self, window_size):
+        super().__init__(window_size, window_size)
