@@ -1,0 +1,14 @@
+perturbation: 
+  dist: "norm"
+  dist_params: [0, 10]
+                
+noise: 
+  dist: "uniform"
+  dist_params: [0, 100]
+frequency:
+  dist: "uniform"
+  dist_params: [0, 100]
+
+amplitude:
+  dist: "uniform"
+  dist_params: [0, 100]

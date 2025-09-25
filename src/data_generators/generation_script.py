@@ -1,10 +1,13 @@
-"""Data generator"""
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import yaml
 from change_types import CHANGE_PARAMS, PROPERTIES   # I don't like this, but it makes it much easier to understand what is going on
 import scipy.stats as ss
+
+def read_config_yaml(file):
+    with open(file) as f:
+        return yaml.safe_load(f)
 
 def generate_constant_signal(loc, scale, n_datapoints):
     y = scipy.stats.norm.rvs(loc=loc, scale=scale, size=n_datapoints)   # Gaussian, for now
@@ -40,12 +43,12 @@ def generate_data_with_params(**params):
     else:
         x = noise_fun(t) + ss.norm.rvs(0, 0.1, params["n_datapoints"]) + perturbation_fun(t)
 
-    if params["change_type"] == "perturbation": # (else you'd remove the step)
+    if params["change_type"] != "perturbation": # (else you'd remove the step)
         x[:location] -= x[:location][-1] - x[location]
     elif params["change_type"] == "perturbation" and not params["stepped"]:  # then actually we do want the signals to attach
         x[:location] -= x[:location][-1] - x[location]
 
-    return t, x, location
+    return t, x
 
 def save_data_to_npz(Xs, ys, fn="test_change_type"):
     np.savez(fn, Xs=Xs, ys=ys)
@@ -60,7 +63,7 @@ def sample_from_distribution(distribution, distribution_params):
     return sample
 
 
-def sample_parameters(time_range, change_type):
+def sample_parameters(time_range, change_type, change_params):
     """Construct dictionary of parameters for different change types. 
     For each of the possible change types, we sample a value. If the change should occur, then we sample a different value
     for the second part of the signal. If the change should not occur, then that value will be the same in the second part of the signal.
@@ -73,8 +76,8 @@ def sample_parameters(time_range, change_type):
         param_dict -- dict: dictionary of the form {"property1": (before, after), "property2": (before, after), ... "propertyN": (before, after)}
     """
     param_dict = {"time_range": time_range}   # Dict to store dicts in
-    for c in list(CHANGE_PARAMS.keys()):
-        params = CHANGE_PARAMS[c]
+    for c in list(change_params.keys()):
+        params = change_params[c]
         distribution_name = get_distribution(params["dist"])
         distribution_params = params["dist_params"]   # returns list of distribution parameters
         val0 = sample_from_distribution(distribution_name, distribution_params)
@@ -82,31 +85,33 @@ def sample_parameters(time_range, change_type):
         if c != change_type:   # If the change is not the one we are looking for, then the second value can be the same as the first (i.e. no change in that property)
              val1 = val0
         param_dict["params_"+c] = (val0, val1)
-    print(param_dict)
     return param_dict
 
-def generate_parameters(n_datasets, n_datapoints, time_range, properties):
+def generate_parameters(n_datasets, n_datapoints, time_range, properties, change_params):
     """Generate dictionary of parameters for each of the datasets we want to generate. This dictionary can be passed directly into the data generation function for each of the datasets.
     The resulting dictionary structure is the union of the dictionary resulting from sample_global_properties and sample_parameters.
     """
     param_dict = {}
     for n in range(n_datasets):  # For each dataset we want to generate
-        param_dict["dataset_"+str(n)] = sample_parameters(time_range, properties["change_type"])
+        param_dict["dataset_"+str(n)] = sample_parameters(time_range, properties["change_type"], change_params)
         param_dict["dataset_"+str(n)].update(properties)
     return param_dict
 
-def generate_datasets(datapoints=10000, datasets=5, time_range=(0, 1)):
-    param_dict = generate_parameters(datasets, datapoints, time_range, PROPERTIES)
+def generate_datasets(datapoints=100, datasets=5, time_range=(0, 1)):
+    properties = read_config_yaml("config/properties.yaml")
+    print(properties)
+    change_params = read_config_yaml("config/change_types.yaml") 
+    param_dict = generate_parameters(datasets, datapoints, time_range, properties, change_params)
+    ts, xs, ys = [], [], []
     for (_, params) in param_dict.items():
-        t, x, y = generate_data_with_params(**params)   # vector, matrix, index
-        plt.plot(t[:int(params["location"])], x[:int(params["location"])], marker="x", color="black")
-        plt.plot(t[int(params["location"]):], x[int(params["location"]):], marker="x",color="red")
-        plt.xlabel("t")
-        plt.xlabel("y")
-        plt.show()
+        t, x = generate_data_with_params(**params)   # vector, matrix, index
+        ts.append(t); xs.append(x); ys.append(params["location"])
+    return ts, xs, ys, param_dict
 
 def test():
-    generate_datasets(datapoints=10000, datasets=10, time_range=(0, 1))
+    ts, xs, ys, _ = generate_datasets(datapoints=100, datasets=10, time_range=(0, 1))
+    plt.plot(ts[0], xs[0])
+    plt.show()
     return
 
 if __name__=="__main__":

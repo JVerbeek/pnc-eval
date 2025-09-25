@@ -1,5 +1,5 @@
 CHANGE_PARAMS = {"perturbation": {"dist": "norm",
-                                  "dist_params": (0, 1)
+                                  "dist_params": (0, 5)
                                   },
                  "noise": {"dist": "uniform",
                            "dist_params": (0, 100)},
