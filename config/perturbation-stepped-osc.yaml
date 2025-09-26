@@ -1,0 +1,12 @@
+change_type: perturbation
+glob_noise_dist: norm
+glob_noise_params:
+- 0
+- 1
+location: 205
+n_datapoints: 500
+oscillating: true
+stepped: true
+time_range:
+- 0
+- 1
