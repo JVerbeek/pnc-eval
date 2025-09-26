@@ -69,11 +69,11 @@ class StackDetector:
             # Get regressor scores on all data
             regressor_predictions = self._get_regressor_predictions(X_s)
 
-            scores = self.scorer.score(regressor_predictions)
+            scores = self.scorer.score(X_s, regressor_predictions)
 
             self.thresholder.fit(scores, y_s)
 
-    #Possible future feature: use y_s for early stopping, also needs model support
+    #Possible future feature: use y_s for early stopping, but this would also need model support
     def predict(self, X_s, y_s = None):
         
         if self.is_fittable and not self.is_fitted:
@@ -81,9 +81,9 @@ class StackDetector:
 
         regressor_predictions = self._get_regressor_predictions(X_s)
 
-        scores = self.scorer.score(regressor_predictions)
+        scores = self.scorer.score(X_s, regressor_predictions)
 
-        predictions = self.thresholder.predict(scores)
+        predictions = self.thresholder.threshold(scores)
 
         return predictions
 
