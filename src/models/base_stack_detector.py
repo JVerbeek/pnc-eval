@@ -6,10 +6,10 @@ from models.window_sliders.window_slide import Slider
 from models.prediction_combiners.prediction_combiners import select_first, select_last, select_mean
 
 class StackDetector:
-    def __init__(self, window_slider, regressor, aggregator, thresholder, prediction_window_size=1, prediction_selection_strategy='first'):
+    def __init__(self, window_slider, regressor, scorer, thresholder, prediction_window_size=1, prediction_selection_strategy='first'):
         self.window_slider = window_slider
         self.regressor = regressor
-        self.aggregator = aggregator
+        self.scorer = scorer
         self.thresholder = thresholder
         self.prediction_window_size = prediction_window_size
         self.prediction_selection_strategy = prediction_selection_strategy
@@ -69,16 +69,30 @@ class StackDetector:
             # Get regressor scores on all data
             regressor_predictions = self._get_regressor_predictions(X_s)
 
-            scores = self.aggregator.aggregate(regressor_predictions)
+            scores = self.scorer.score(regressor_predictions)
 
             self.thresholder.fit(scores, y_s)
 
+    #Possible future feature: use y_s for early stopping, also needs model support
     def predict(self, X_s, y_s = None):
-        pass
+        
+        if self.is_fittable and not self.is_fitted:
+            raise ValueError("This StackDetector is fittable but has not been fitted yet. Please call fit() before predict().")
+
+        regressor_predictions = self._get_regressor_predictions(X_s)
+
+        scores = self.scorer.score(regressor_predictions)
+
+        predictions = self.thresholder.predict(scores)
+
+        return predictions
 
     def fit_predict(self, X_s, y_s):
-        pass
+        
+        self.fit(X_s, y_s)
+        return self.predict(X_s, y_s)
 
+    #If we want early stopping, we need a mirror of this function which has the functionality to use y_s and self.thresholder to determine whether the change point has been detected yet
     def _get_regressor_predictions(self, X_s):
         regressor_predictions = []
         for X in X_s:
@@ -97,5 +111,7 @@ class StackDetector:
             combined_predictions = self.prediction_selector(window_predictions, prediction_window_indices)
 
             regressor_predictions.append(combined_predictions)
+
+        return regressor_predictions
 
 
