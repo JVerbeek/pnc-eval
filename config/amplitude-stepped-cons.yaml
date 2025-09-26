@@ -1,0 +1,12 @@
+change_type: amplitude
+glob_noise_dist: norm
+glob_noise_params:
+- 0
+- 1
+location: 184
+n_datapoints: 500
+oscillating: false
+stepped: true
+time_range:
+- 0
+- 1
