@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import yaml
-from change_types import CHANGE_PARAMS, PROPERTIES   # I don't like this, but it makes it much easier to understand what is going on
 import scipy.stats as ss
 
 def read_config_yaml(file):
@@ -97,10 +96,9 @@ def generate_parameters(n_datasets, n_datapoints, time_range, properties, change
         param_dict["dataset_"+str(n)].update(properties)
     return param_dict
 
-def generate_datasets(datapoints=100, datasets=5, time_range=(0, 1)):
-    properties = read_config_yaml("config/properties.yaml")
-    print(properties)
-    change_params = read_config_yaml("config/change_types.yaml") 
+def generate_datasets(change_types_fn="config/change_types.yaml", properties_fn="config/properties.yaml", datapoints=100, datasets=5, time_range=(0, 1)):
+    properties = read_config_yaml(properties_fn)
+    change_params = read_config_yaml(change_types_fn) 
     param_dict = generate_parameters(datasets, datapoints, time_range, properties, change_params)
     ts, xs, ys = [], [], []
     for (_, params) in param_dict.items():
