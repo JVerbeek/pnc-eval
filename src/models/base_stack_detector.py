@@ -1,9 +1,9 @@
 import numpy as np
 import abc
 
-from models.window_sliders.window_slide import Slider
+from src.models.window_sliders.window_slide import Slider
 
-from models.prediction_combiners.prediction_combiners import select_first, select_last, select_mean
+from src.models.prediction_combiners.prediction_combiners import select_first, select_last, select_mean
 
 class StackDetector:
     def __init__(self, window_slider, regressor, scorer, thresholder, prediction_window_size=1, prediction_selection_strategy='first'):
@@ -13,6 +13,7 @@ class StackDetector:
         self.thresholder = thresholder
         self.prediction_window_size = prediction_window_size
         self.prediction_selection_strategy = prediction_selection_strategy
+        self.verbose = True
 
         # Input checks:
         # prediction_window_size must be positive integer
@@ -51,9 +52,9 @@ class StackDetector:
     def fit(self, X_s, y_s=None):
 
         #Input checks:
-        if not self.is_fittable:
-            raise ValueError("This StackDetector has no fittable components.")
-        
+        #if not self.is_fittable:
+        #    raise ValueError("This StackDetector has no fittable components.")
+        #
         #y_s can be None only if the thresholder is not fittable
         if self.thresholder.is_fittable and y_s is None:
             raise ValueError("y_s cannot be None if the thresholder is fittable.")
@@ -70,7 +71,7 @@ class StackDetector:
             regressor_predictions = self._get_regressor_predictions(X_s)
 
             scores = self.scorer.score(X_s, regressor_predictions)
-
+             
             self.thresholder.fit(scores, y_s)
 
     #Possible future feature: use y_s for early stopping, but this would also need model support
@@ -79,25 +80,22 @@ class StackDetector:
         if self.is_fittable and not self.is_fitted:
             raise ValueError("This StackDetector is fittable but has not been fitted yet. Please call fit() before predict().")
 
-        regressor_predictions = self._get_regressor_predictions(X_s)
-
-        scores = self.scorer.score(X_s, regressor_predictions)
-
+        regressor_predictions = self._get_regressor_predictions(y_s)
+        scores = self.scorer.score(y_s, regressor_predictions)
+        if self.verbose:
+            print(scores)
         predictions = self.thresholder.threshold(scores)
-
         return predictions
 
     def fit_predict(self, X_s, y_s):
-        
         self.fit(X_s, y_s)
         return self.predict(X_s, y_s)
 
     #If we want early stopping, we need a mirror of this function which has the functionality to use y_s and self.thresholder to determine whether the change point has been detected yet
-    def _get_regressor_predictions(self, X_s):
+    def _get_regressor_predictions(self, y_s, debug=True):
         regressor_predictions = []
-        for X in X_s:
-            self.window_slider.new_slide(X)
-
+        for y in y_s:
+            self.window_slider.new_slide(y)
             window_predictions = []
             prediction_window_indices = []
 
@@ -106,10 +104,11 @@ class StackDetector:
                 window_predictions.append(window_pred)
                 _, window_end_index = self.window_slider.get_window_indices()
                 prediction_window_indices.append((window_end_index, window_end_index+self.prediction_window_size))
-
+        
             # Combine predictions using specified strategy:
             combined_predictions = self.prediction_selector(window_predictions, prediction_window_indices)
-
+            skip = self.window_slider.get_window_indices()[1] - self.window_slider.get_window_indices()[0]
+            combined_predictions = combined_predictions[skip+self.prediction_window_size:]
             regressor_predictions.append(combined_predictions)
 
         return regressor_predictions

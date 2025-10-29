@@ -3,12 +3,17 @@ import argparse
 import importlib
 import json
 import os
+from re import A
 import yaml
 import sys
 import numpy as np
 
 #Temporary import until parsing is added
-from src.models.threshold_models.threshold_model import ThresholdModel
+from src.models.base_stack_detector import StackDetector
+from src.models.regressors.linear_regression import LinearRegressionModel
+from src.models.regressors.gaussian_process import GPRModel
+from src.models.thresholders.wald_constant_thresholder import WaldConstantThresholder
+from src.models.window_sliders.window_slide import WindowSlider
 
 
 def import_object_from_string(dotted_path):
@@ -24,7 +29,7 @@ def main():
     parser.add_argument('--model', required=True, help='Dotted path to the model function')
     parser.add_argument('--model-hyperparameters', default=None, help='YAML file of keyword arguments for the model class (default: None, use empty dict)')
     parser.add_argument('--metric', default='src.metrics.metrics.f1_score', help='Metric to optimize threshold on (default: f1)')
-    parser.add_argument('--score-function', default='src.score_functions.cusum.cusum_score', help='Score function to convert regression output to scores (default: cusum)')
+    parser.add_argument('--scorer', default='src.models.scorers.cusum.BidirectionalCUSUMScorer', help='Score function to convert regression output to scores (default: cusum)')
 
     args = parser.parse_args()
 
@@ -49,7 +54,7 @@ def main():
     generator_fn = import_object_from_string(args.generator)
     model_cls = import_object_from_string(args.model)
     metric = import_object_from_string(args.metric)
-    score_function = import_object_from_string(args.score_function)
+    scorer = import_object_from_string(args.scorer)()
 
     # Training
     # Check if data has been generated before:
@@ -74,39 +79,37 @@ def main():
     os.makedirs(generated_data_folder, exist_ok=True)
 
     if not os.path.exists(X_file) or not os.path.exists(y_file):
-        X_train, y_train = generator_fn(**generator_kwargs)
-        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
+        X_train, y_train, cps, params = generator_fn(properties=generator_kwargs)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
         # Save the generated data with explicit keys
         np.savez_compressed(X_file, X_train=X_train) #check if this works for lists
         np.savez_compressed(y_file, y_train=y_train)
     else:
-        # Load the generated data using explicit keys
+    # Load the generated data using explicit keys
         X_train = np.load(X_file)['X_train']
         y_train = np.load(y_file)['y_train']
 
+    y_train = [(y - y.mean())/y.std() for y in y_train]
 
+    alpha = 10e-25
+    print(f"Wald constant threshold is {-np.log(alpha)}")
+    sd = StackDetector(window_slider=WindowSlider(window_size=20, skip_length=1), regressor=GPRModel(), 
+                  thresholder=WaldConstantThresholder(alpha=alpha), 
+                  scorer=scorer, prediction_window_size=1)
+    pred = sd.fit_predict(X_train, y_train)
+    import matplotlib.pyplot as plt 
+    for X_t, y_t, p in zip(X_train, y_train, pred):
+        fig, ax = plt.subplots(1, 1)
+        ax.plot(X_t, y_t)
+        ax.fill_between(X_t.flatten()[sd.window_slider.window_size - 1:], ax.get_ylim()[0], ax.get_ylim()[1], where=p > 0, color="red", alpha=0.3)
+        plt.show()
 
-    # Instantiate base model with kwargs
-    model = model_cls(**model_kwargs)
-    #- Kwargs at least include: window slider, regressor, aggregator, and thresholder
-
-    # Fit the model (finding parameters and threshold)
-    model.fit(X_train, y_train)
-
-    # Visualize the threshold optimization for testing purposes
-    model.visualize_optimization()
-
-# For testing purposes, provide defaults if not running as a script
-
-# if __name__ == "__main__":
-#     main()
-
+# For testing purposes, provide defaults if not running as a scriptproperties
 if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
-        "--generator", "src.data_generators.mean_change.generate_mean_change",
-        "--model", "src.models.regression_models.linear_regression.LinearRegressionModel",
-        # "--model-hyperparameters", "path/to/model_hyperparams.yaml",
-        "--generator-hyperparameters", "mean_change_example.yaml"
+        "--generator", "src.data_generators.generation_script.generate_datasets",
+        "--model", "src.models.regressors.linear_regression.LinearRegressionModel",
+        "--model-hyperparameters", "path/to/model_hyperparams.yaml",
+        "--generator-hyperparameters", "config/amplitude-stepped-cons.yaml"
     ]
     main()

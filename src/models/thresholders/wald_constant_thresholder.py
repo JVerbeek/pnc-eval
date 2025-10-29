@@ -16,7 +16,7 @@ class WaldConstantThresholder(BaseThresholder):
             alpha (float): Acceptable false alarm rate (default is 0.05).
         """
         self.alpha = alpha
-
+        super().__init__()
         # Input checks:
         if not (0 < alpha < 1):
             raise ValueError("alpha must be between 0 and 1.")

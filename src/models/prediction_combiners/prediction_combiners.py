@@ -8,7 +8,7 @@ def select_first(window_predictions, window_indices):
     When multiple predictions exist for a single time point due to overlapping windows,
     this function selects the first prediction in the window.
     """
-    predictions = np.zeros(window_indices[-1[1]]) # Initialize an array to hold final predictions.
+    predictions = np.zeros(window_indices[-1][1]) # Initialize an array to hold final predictions.
 
     #Easiest way to do this is loop in reverse order, so the first prediction is the last one written
     for preds, (start_idx, end_idx) in zip(reversed(window_predictions), reversed(window_indices)):
@@ -21,7 +21,7 @@ def select_last(window_predictions, window_indices):
     When multiple predictions exist for a single time point due to overlapping windows,
     this function selects the last prediction in the window.
     """
-    predictions = np.zeros(window_indices[-1[1]]) # Initialize an array to hold final predictions.
+    predictions = np.zeros(window_indices[-1][1]) # Initialize an array to hold final predictions.
 
     #Easiest way to do this is loop so the last prediction is the last one written
     for preds, (start_idx, end_idx) in zip(window_predictions, window_indices):

@@ -1,14 +1,15 @@
-perturbation: 
+perturbation_dist: 
   dist: "norm"
   dist_params: [0, 10]
                 
-noise: 
-  dist: "uniform"
-  dist_params: [0, 100]
-frequency:
+noise_dist: 
   dist: "uniform"
   dist_params: [0, 100]
 
-amplitude:
+frequency_dist:
+  dist: "uniform"
+  dist_params: [0, 100]
+
+amplitude_dist:
   dist: "uniform"
   dist_params: [0, 100]

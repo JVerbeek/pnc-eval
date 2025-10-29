@@ -92,14 +92,14 @@ def generate_parameters(n_datasets, n_datapoints, time_range, properties, change
     """
     param_dict = {}
     for n in range(n_datasets):  # For each dataset we want to generate
-        param_dict["dataset_"+str(n)] = sample_parameters(time_range, properties["change_type"], change_params)
+        param_dict["dataset_"+str(n)] = sample_parameters(properties["time_range"], properties["change_type"], change_params)
         param_dict["dataset_"+str(n)].update(properties)
     return param_dict
 
-def generate_datasets(change_types_fn="config/change_types.yaml", properties_fn="config/properties.yaml", datapoints=100, datasets=5, time_range=(0, 1)):
-    properties = read_config_yaml(properties_fn)
-    change_params = read_config_yaml(change_types_fn) 
-    param_dict = generate_parameters(datasets, datapoints, time_range, properties, change_params)
+def generate_datasets(properties={}):
+    change_params = {k: properties[k] for k in ["perturbation_dist", "noise_dist", "frequency_dist", "amplitude_dist"]}
+    properties_filtered = {k:v for k, v in properties.items() if k not in change_params.keys()}
+    param_dict = generate_parameters(properties["n_datasets"], properties["n_datapoints"], properties["time_range"], properties_filtered, change_params)
     ts, xs, ys = [], [], []
     for (_, params) in param_dict.items():
         t, x = generate_data_with_params(**params)   # vector, matrix, index
