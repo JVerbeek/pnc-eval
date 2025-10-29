@@ -92,15 +92,15 @@ def main():
 
     alpha = 10e-25
     print(f"Wald constant threshold is {-np.log(alpha)}")
-    sd = StackDetector(window_slider=WindowSlider(window_size=20, skip_length=1), regressor=GPRModel(), 
+    sd = StackDetector(window_slider=WindowSlider(window_size=20, skip_length=5), regressor=LinearRegressionModel(), 
                   thresholder=WaldConstantThresholder(alpha=alpha), 
-                  scorer=scorer, prediction_window_size=1)
+                  scorer=scorer, prediction_window_size=10)
     pred = sd.fit_predict(X_train, y_train)
     import matplotlib.pyplot as plt 
     for X_t, y_t, p in zip(X_train, y_train, pred):
         fig, ax = plt.subplots(1, 1)
         ax.plot(X_t, y_t)
-        ax.fill_between(X_t.flatten()[sd.window_slider.window_size - 1:], ax.get_ylim()[0], ax.get_ylim()[1], where=p > 0, color="red", alpha=0.3)
+        ax.fill_between(X_t.flatten()[sd.window_slider.window_size - sd.window_slider.skip_length:], ax.get_ylim()[0], ax.get_ylim()[1], where=p > 0, color="red", alpha=0.3)
         plt.show()
 
 # For testing purposes, provide defaults if not running as a scriptproperties
