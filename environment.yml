@@ -1,0 +1,8 @@
+name: predict_and_compare
+dependencies:
+  - python=3.11
+  - scipy
+  - matplotlib
+  - seaborn
+  - scikit-learn
+  - pyyaml
