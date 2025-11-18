@@ -73,18 +73,17 @@ def main():
     window_slider_cls = import_object_from_string(args.window_slider)
     window_slider = window_slider_cls(**window_slider_kwargs)
     thresholder_cls = import_object_from_string(args.thresholder)
-    print(thresholder_kwargs)
     thresholder = thresholder_cls(**thresholder_kwargs)
 
     sd = StackDetector(window_slider=window_slider, regressor=regressor, 
                        thresholder=thresholder, 
-                       scorer=scorer, prediction_window_size=10, verbose=True)
+                       scorer=scorer, prediction_window_size=10, verbose=False)
 
     # Training (only if model is fittable)
     if regressor.is_fittable:
         print("Model is fittable, training...")
         # If we want to add preprocessing steps, add them to this function call
-        X_train, y_train, cps, params = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="train")
+        X_train, y_train, cps = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="train")
 
         sd.fit(X_train, y_train)
 
@@ -94,10 +93,10 @@ def main():
 
     # Testing
 
-    X_test, y_test, cps, params = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="test")
+    X_test, y_test, cps = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="test")
 
 
-    pred_test = sd.fit_predict(X_test, y_test)
+    pred_test = sd.predict(X_test, y_test)
 
     # optional test plotting:
     if args.plot_test_results:
@@ -133,7 +132,7 @@ def generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters, 
     X_file = os.path.join(generated_data_folder, f"X_{set_name}.npz")
     y_file = os.path.join(generated_data_folder, f"y_{set_name}.npz")
     cps_file = os.path.join(generated_data_folder, f"cps_{set_name}.npz")
-    params_file = os.path.join(generated_data_folder, f"params_{set_name}.npz")
+    params_file = os.path.join(generated_data_folder, f"params_{set_name}.json")
 
 
     if not os.path.exists(X_file) or not os.path.exists(y_file) or not os.path.exists(cps_file) or not os.path.exists(params_file):
@@ -142,19 +141,24 @@ def generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters, 
         np.savez_compressed(X_file, X=X) #check if this works for lists
         np.savez_compressed(y_file, y=y)
         np.savez_compressed(cps_file, cps=cps)
-        np.savez_compressed(params_file, params=params)
+        # Save params as JSON (assume params is a plain dict)
+        #print(params)
+        #with open(params_file, "w") as f:
+        #    json.dump(params, f, indent=2)
     else:
     # Load the generated data using explicit keys
-        X = np.load(X_file)[f"X_{set_name}"]
-        y = np.load(y_file)[f"y_{set_name}"]
-        cps = np.load(cps_file)[f"cps_{set_name}"]
-        params = np.load(params_file)[f"params_{set_name}"]
+        X = np.load(X_file)["X"]
+        y = np.load(y_file)["y"]
+        cps = np.load(cps_file)["cps"]
+        #with open(params_file, "r") as f:
+        #    params = json.load(f)
+
 
 
     # Currently always standardize the y data, could implement generic preprocessing later?
     y = [(y_instance - y_instance.mean())/y_instance.std() for y_instance in y]
 
-    return X, y, cps, params
+    return X, y, cps#, params
 
 # For testing purposes, provide defaults if not running as a script
 if __name__ == "__main__":
