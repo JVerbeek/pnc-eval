@@ -6,14 +6,13 @@ from src.models.window_sliders.window_slide import Slider
 from src.models.prediction_combiners.prediction_combiners import select_first, select_last, select_mean
 
 class StackDetector:
-    def __init__(self, window_slider, regressor, scorer, thresholder, prediction_window_size=1, prediction_selection_strategy='first', verbose=False):
+    def __init__(self, window_slider, regressor, scorer, thresholder, prediction_window_size=1, prediction_selection_strategy='first'):
         self.window_slider = window_slider
         self.regressor = regressor
         self.scorer = scorer
         self.thresholder = thresholder
         self.prediction_window_size = prediction_window_size
         self.prediction_selection_strategy = prediction_selection_strategy
-        self.verbose = verbose
 
         # Input checks:
         # prediction_window_size must be positive integer
@@ -82,8 +81,6 @@ class StackDetector:
 
         regressor_predictions = self._get_regressor_predictions(y_s)
         scores = self.scorer.score(y_s, regressor_predictions)
-        if self.verbose:
-            print(scores)
         predictions = self.thresholder.threshold(scores)
         return predictions
 

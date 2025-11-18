@@ -77,7 +77,7 @@ def main():
 
     sd = StackDetector(window_slider=window_slider, regressor=regressor, 
                        thresholder=thresholder, 
-                       scorer=scorer, prediction_window_size=10, verbose=False)
+                       scorer=scorer, prediction_window_size=10)
 
     # Training (only if model is fittable)
     if regressor.is_fittable:
