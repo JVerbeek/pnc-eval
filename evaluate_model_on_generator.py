@@ -3,17 +3,11 @@ import argparse
 import importlib
 import json
 import os
-from re import A
 import yaml
 import sys
 import numpy as np
 
-#Temporary import until parsing is added
 from src.models.base_stack_detector import StackDetector
-from src.models.regressors.linear_regression import LinearRegressionModel
-from src.models.regressors.gaussian_process import GPRModel
-from src.models.thresholders.wald_constant_thresholder import WaldConstantThresholder
-from src.models.window_sliders.window_slide import WindowSlider
 
 
 def import_object_from_string(dotted_path):
@@ -26,22 +20,38 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--generator', required=True, help='Dotted path to the generator function')
     parser.add_argument('--generator-hyperparameters', default=None, help='YAML file of keyword arguments for the generator function (default: None, use empty dict)') 
-    parser.add_argument('--model', required=True, help='Dotted path to the model function')
-    parser.add_argument('--model-hyperparameters', default=None, help='YAML file of keyword arguments for the model class (default: None, use empty dict)')
-    parser.add_argument('--metric', default='src.metrics.metrics.f1_score', help='Metric to optimize threshold on (default: f1)')
+    parser.add_argument('--regressor', required=True, help='Dotted path to the regressor class')
+    parser.add_argument('--regressor-hyperparameters', default=None, help='YAML file of keyword arguments for the regressor class (default: None, use empty dict)')
+    parser.add_argument('--window-slider', default='src.models.window_sliders.window_slide.WindowSlider', help='Dotted path to the window slider class (default: WindowSlider)')
+    parser.add_argument('--window-slider-kwargs', default=None, help='YAML file of keyword arguments for the window slider class (default: None, use empty dict)')
+    parser.add_argument('--thresholder', default='src.models.thresholders.wald_constant_thresholder.WaldConstantThresholder', help='Dotted path to the thresholder class (default: WaldConstantThresholder)')
+    parser.add_argument('--thresholder-kwargs', default=None, help='YAML file of keyword arguments for the thresholder class (default: None, use empty dict)')
     parser.add_argument('--scorer', default='src.models.scorers.cusum.BidirectionalCUSUMScorer', help='Score function to convert regression output to scores (default: cusum)')
+    parser.add_argument('--plot-test-results', action='store_true', help='Whether to plot test results (default: False)')
 
     args = parser.parse_args()
 
     # Use the generator and model
     # Parse model and generator kwargs from YAML 
     # If the files are not provided, use empty dicts as kwargs
-    # Load model hyperparameters
-    if args.model_hyperparameters and os.path.isfile(args.model_hyperparameters):
-        with open(args.model_hyperparameters, "r") as f:
-            model_kwargs = yaml.safe_load(f) or {}
+    # Load regressor, window-slider, and thresholder hyperparameters
+    if args.regressor_hyperparameters and os.path.isfile(args.regressor_hyperparameters):
+        with open(args.regressor_hyperparameters, "r") as f:
+            regressor_kwargs = yaml.safe_load(f) or {}
     else:
-        model_kwargs = {}
+        regressor_kwargs = {}
+
+    if args.window_slider_kwargs and os.path.isfile(args.window_slider_kwargs):
+        with open(args.window_slider_kwargs, "r") as f:
+            window_slider_kwargs = yaml.safe_load(f) or {}
+    else:
+        window_slider_kwargs = {}
+
+    if args.thresholder_kwargs and os.path.isfile(args.thresholder_kwargs):
+        with open(args.thresholder_kwargs, "r") as f:
+            thresholder_kwargs = yaml.safe_load(f) or {}
+    else:
+        thresholder_kwargs = {}
 
     # Load generator hyperparameters
     if args.generator_hyperparameters and os.path.isfile(args.generator_hyperparameters):
@@ -50,17 +60,61 @@ def main():
     else:
         generator_kwargs = {}
 
-    # Import generator function and model class
+    # Import data generator
     generator_fn = import_object_from_string(args.generator)
-    model_cls = import_object_from_string(args.model)
-    metric = import_object_from_string(args.metric)
+
+
+    # Import window slider, regressor, thresholder, scorer
+    regressor_cls = import_object_from_string(args.regressor)
+    regressor = regressor_cls(**regressor_kwargs)
+    #metric = import_object_from_string(args.metric)
     scorer = import_object_from_string(args.scorer)()
 
-    # Training
+    window_slider_cls = import_object_from_string(args.window_slider)
+    window_slider = window_slider_cls(**window_slider_kwargs)
+    thresholder_cls = import_object_from_string(args.thresholder)
+    print(thresholder_kwargs)
+    thresholder = thresholder_cls(**thresholder_kwargs)
+
+    sd = StackDetector(window_slider=window_slider, regressor=regressor, 
+                       thresholder=thresholder, 
+                       scorer=scorer, prediction_window_size=10, verbose=True)
+
+    # Training (only if model is fittable)
+    if regressor.is_fittable:
+        print("Model is fittable, training...")
+        # If we want to add preprocessing steps, add them to this function call
+        X_train, y_train, cps, params = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="train")
+
+        sd.fit(X_train, y_train)
+
+
+    # Validation for hyperparameter selection (not implemented yet)
+    #TODO: Implement hyperparameter selection
+
+    # Testing
+
+    X_test, y_test, cps, params = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="test")
+
+
+    pred_test = sd.fit_predict(X_test, y_test)
+
+    # optional test plotting:
+    if args.plot_test_results:
+        import matplotlib.pyplot as plt 
+
+        for X_t, y_t, p in zip(X_test, y_test, pred_test):
+            fig, ax = plt.subplots(1, 1)
+            ax.plot(X_t, y_t)
+            ax.plot(X_t[:len(p)], p)
+            ax.fill_between(X_t.flatten()[sd.window_slider.window_size - sd.window_slider.skip_length:], ax.get_ylim()[0], ax.get_ylim()[1], where=p > 0, color="red", alpha=0.3)
+            plt.show()
+
+def generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters, generator_name, set_name="train"):
     # Check if data has been generated before:
 
     # Convert hyperparameter kwargs dict to a folder name
-    if args.generator_hyperparameters:
+    if generator_hyperparameters:
         # Create a concise, readable string from generator_kwargs for folder naming
         import hashlib
         # Use a hash of the kwargs string for a robust folder 
@@ -69,48 +123,49 @@ def main():
         hash_object = hashlib.sha256(generator_kwargs_str.encode())
         generator_kwargs_str = hash_object.hexdigest()[:32] #technically not unique, but hopefully fine
 
-    else:
+    else: # no hyperparameters provided, e.g. args.generator_hyperparameters is None
         generator_kwargs_str = "default"
 
-    generated_data_folder = os.path.join("generated_data", args.generator.replace('.', '_'), generator_kwargs_str)
+    generated_data_folder = os.path.join("generated_data", generator_name.replace('.', '_'), generator_kwargs_str)
 
-    X_file = os.path.join(generated_data_folder, "X_train.npz")
-    y_file = os.path.join(generated_data_folder, "y_train.npz")
     os.makedirs(generated_data_folder, exist_ok=True)
 
-    if not os.path.exists(X_file) or not os.path.exists(y_file):
-        X_train, y_train, cps, params = generator_fn(properties=generator_kwargs)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
+    X_file = os.path.join(generated_data_folder, f"X_{set_name}.npz")
+    y_file = os.path.join(generated_data_folder, f"y_{set_name}.npz")
+    cps_file = os.path.join(generated_data_folder, f"cps_{set_name}.npz")
+    params_file = os.path.join(generated_data_folder, f"params_{set_name}.npz")
+
+
+    if not os.path.exists(X_file) or not os.path.exists(y_file) or not os.path.exists(cps_file) or not os.path.exists(params_file):
+        X, y, cps, params = generator_fn(properties=generator_kwargs)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
         # Save the generated data with explicit keys
-        np.savez_compressed(X_file, X_train=X_train) #check if this works for lists
-        np.savez_compressed(y_file, y_train=y_train)
+        np.savez_compressed(X_file, X=X) #check if this works for lists
+        np.savez_compressed(y_file, y=y)
+        np.savez_compressed(cps_file, cps=cps)
+        np.savez_compressed(params_file, params=params)
     else:
     # Load the generated data using explicit keys
-        X_train = np.load(X_file)['X_train']
-        y_train = np.load(y_file)['y_train']
+        X = np.load(X_file)[f"X_{set_name}"]
+        y = np.load(y_file)[f"y_{set_name}"]
+        cps = np.load(cps_file)[f"cps_{set_name}"]
+        params = np.load(params_file)[f"params_{set_name}"]
 
-    y_train = [(y - y.mean())/y.std() for y in y_train]
 
-    alpha = 10e-25
-    print(f"Wald constant threshold is {-np.log(alpha)}")
-    sd = StackDetector(window_slider=WindowSlider(window_size=20, skip_length=2), regressor=model_cls(), 
-                  thresholder=WaldConstantThresholder(alpha=alpha), 
-                  scorer=scorer, prediction_window_size=10, verbose=True)
-    pred = sd.fit_predict(X_train, y_train)
-    import matplotlib.pyplot as plt 
-    for X_t, y_t, p in zip(X_train, y_train, pred):
-        fig, ax = plt.subplots(1, 1)
-        ax.plot(X_t, y_t)
-        ax.plot(X_t[:len(p)], p)
-        ax.fill_between(X_t.flatten()[sd.window_slider.window_size - sd.window_slider.skip_length:], ax.get_ylim()[0], ax.get_ylim()[1], where=p > 0, color="red", alpha=0.3)
-        plt.show()
+    # Currently always standardize the y data, could implement generic preprocessing later?
+    y = [(y_instance - y_instance.mean())/y_instance.std() for y_instance in y]
 
-# For testing purposes, provide defaults if not running as a scriptproperties
+    return X, y, cps, params
+
+# For testing purposes, provide defaults if not running as a script
 if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
         "--generator", "src.data_generators.generation_script.generate_datasets",
-        "--model", "src.models.regressors.linear_regression.LinearRegressionModel",
-        "--model-hyperparameters", "path/to/model_hyperparams.yaml",
-        "--generator-hyperparameters", "config/amplitude-stepped-cons.yaml"
+        "--generator-hyperparameters", "config/amplitude-stepped-cons.yaml",
+        "--regressor", "src.models.regressors.linear_regression.LinearRegressionModel",
+        #"--regressor-hyperparameters", "path/to/model_hyperparams.yaml",
+        "--window-slider-kwargs", "config/window_slider.yaml",
+        "--thresholder-kwargs", "config/wald-constant-thresholder.yaml",
+        "--plot-test-results"
     ]
     main()
