@@ -96,6 +96,7 @@ def main():
                   thresholder=WaldConstantThresholder(alpha=alpha), 
                   scorer=scorer, prediction_window_size=10, verbose=True)
     pred = sd.fit_predict(X_train, y_train)
+
     import matplotlib.pyplot as plt 
     for X_t, y_t, p in zip(X_train, y_train, pred):
         fig, ax = plt.subplots(1, 1)
