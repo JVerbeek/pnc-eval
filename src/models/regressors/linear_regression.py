@@ -16,12 +16,10 @@ class LinearRegressionModel(BaseRegressionModel):
         y_pred: 
         """
         x = np.arange(len(input_window)).reshape(-1, 1)
-        print(x.shape, "shape of x", input_window.shape, "shape of input")
         self.model.fit(x, input_window)
 
         x_pred = np.arange(len(input_window), len(input_window) + prediction_window_size).reshape(-1, 1)
         y_pred = self.model.predict(x_pred)
-        print(y_pred.shape, "shape of y_pred")
         return y_pred 
 
 
