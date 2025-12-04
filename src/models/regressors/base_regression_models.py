@@ -30,7 +30,7 @@ class OnlineFittableRegressionModel(FittableRegressionModel):
     def fit(self, input_window, prediction_window):
         pass
 
-class BulkFittableRegressionModel(FittableRegressionModel):
+class BatchFittableRegressionModel(FittableRegressionModel):
     def __init__(self, model):
         super().__init__(model)
         self.fittable = True
@@ -42,7 +42,7 @@ class BulkFittableRegressionModel(FittableRegressionModel):
         pass
 
     @abc.abstractmethod
-    def bulk_predict(self, X, y):
+    def batch_predict(self, X, y):
         # X: array-like of shape (n_windows, window_size) or (n_windows, n_features, window_size) for multivariate)
         # y: array-like of shape (n_windows, prediction_window_size)
         pass
