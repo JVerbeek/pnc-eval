@@ -18,9 +18,31 @@ class FittableRegressionModel(BaseRegressionModel):
         self.fittable = True 
 
     @abc.abstractmethod
+    def predict(self, input_window, prediction_window_size=1):
+        pass
+
+class OnlineFittableRegressionModel(FittableRegressionModel):
+    def __init__(self, model):
+        super().__init__(model)
+        self.fittable = True 
+
+    @abc.abstractmethod
     def fit(self, input_window, prediction_window):
         pass
 
+class BulkFittableRegressionModel(FittableRegressionModel):
+    def __init__(self, model):
+        super().__init__(model)
+        self.fittable = True
+
     @abc.abstractmethod
-    def predict(self, input_window, prediction_window_size=1):
+    def fit(self, X, y):
+        # X: array-like of shape (n_windows, window_size) or (n_windows, n_features, window_size) for multivariate)
+        # y: array-like of shape (n_windows, prediction_window_size)
+        pass
+
+    @abc.abstractmethod
+    def bulk_predict(self, X, y):
+        # X: array-like of shape (n_windows, window_size) or (n_windows, n_features, window_size) for multivariate)
+        # y: array-like of shape (n_windows, prediction_window_size)
         pass
