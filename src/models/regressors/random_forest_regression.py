@@ -1,7 +1,9 @@
 from models.regressors.base_regression_models import BatchFittableRegressionModel
 
+from helper_functions.data_transformation import transform_for_autoregressive_fit
 
 from sklearn.ensemble import RandomForestRegressor
+import numpy as np
 
 class MultiOutputRandomForest(BatchFittableRegressionModel):
     def __init__(self, model, **kwargs):
@@ -45,9 +47,28 @@ class AutoRegressiveRandomForest(BatchFittableRegressionModel):
         # We therefore need to fit the model multiple times, each time shifting the input window by one step and using the next step in y as target.
         # Note: this is somewhat whacky in the multivariate setting, so it's not yet supported.
 
+        # Apply helper function to transform X and y into the required format:
 
-        pass
+        if y.ndim > 1 and y.shape[1] > 1:
+            X_ar, y_ar = transform_for_autoregressive_fit(X, y)
+        else:
+            X_ar, y_ar = X, y
+
+        self.model.fit(X_ar, y_ar)
+
 
     def predict(self, input_window, prediction_window_size=1):
         # input_window: array-like of shape (1, window_size)
-        pass
+        # prediction_window_size: int, number of steps to predict ahead
+
+        if input_window.ndim == 1:
+            input_window = input_window.reshape(1, -1)
+
+        y_pred = np.zeros((prediction_window_size,))
+        for i in range(prediction_window_size):
+            y_pred[i] = self.model.predict(input_window)
+            # Append the predicted value to the input window for next prediction
+            input_window = np.roll(input_window, -1)
+            input_window[0, -1] = y_pred[i]
+
+        return y_pred
