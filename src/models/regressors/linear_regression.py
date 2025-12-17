@@ -21,6 +21,3 @@ class LinearRegressionModel(BaseRegressionModel):
         x_pred = np.arange(len(input_window), len(input_window) + prediction_window_size).reshape(-1, 1)
         y_pred = self.model.predict(x_pred)
         return y_pred 
-
-
-lr = LinearRegression()
