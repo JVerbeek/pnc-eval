@@ -7,7 +7,6 @@ class BaseRegressionModel(abc.ABC):
         self.fittable = False # By default, models are not fittable
         pass
 
-
     @abc.abstractmethod
     def predict(self, input_window, prediction_window_size=1):
         pass
@@ -37,12 +36,6 @@ class BatchFittableRegressionModel(FittableRegressionModel):
 
     @abc.abstractmethod
     def fit(self, X, y):
-        # X: array-like of shape (n_windows, window_size) or (n_windows, n_features, window_size) for multivariate)
-        # y: array-like of shape (n_windows, prediction_window_size)
-        pass
-
-    @abc.abstractmethod
-    def batch_predict(self, X, y):
-        # X: array-like of shape (n_windows, window_size) or (n_windows, n_features, window_size) for multivariate)
+        # X: array-like of shape (n_windows, window_size)
         # y: array-like of shape (n_windows, prediction_window_size)
         pass
