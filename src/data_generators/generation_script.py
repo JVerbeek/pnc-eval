@@ -107,7 +107,7 @@ def generate_parameters(n_datasets, n_datapoints, time_range, properties, change
     return param_dict
 
 def generate_datasets(properties={}):
-    print(properties)
+    
     change_params = {k: properties[k] for k in ["perturbation_dist", "noise_dist", "frequency_dist", "amplitude_dist"]}
     properties_filtered = {k:v for k, v in properties.items() if k not in change_params.keys()}
     param_dict = generate_parameters(properties["n_datasets"], properties["n_datapoints"], properties["time_range"], properties_filtered, change_params)
