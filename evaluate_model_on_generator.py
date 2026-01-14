@@ -17,6 +17,17 @@ def import_object_from_string(dotted_path):
     module = importlib.import_module(module_path)
     return getattr(module, obj_name)
 
+def handle_open_file(filename):
+    try:
+        if filename is None:
+            return {}
+        with open(filename, "r") as f:
+                kwargs = yaml.safe_load(f)
+        return kwargs
+    except FileNotFoundError:
+        print(f"File not found for {filename}. Did you supply the correct path?")
+        sys.exit()
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--generator', default="src.data_generators.generation_script.generate_datasets", required=True, help='Dotted path to the generator function')
@@ -37,31 +48,11 @@ def main():
     # If the files are not provided, use empty dicts as kwargs
     # Load regressor, window-slider, and thresholder hyperparameters
     # TODO: add error handling for YAML loading
-    if args.regressor_hyperparameters and os.path.isfile(args.regressor_hyperparameters):
-        with open(args.regressor_hyperparameters, "r") as f:
-            regressor_kwargs = yaml.safe_load(f) or {}
-    else:
-        regressor_kwargs = {}
 
-    if args.window_slider_kwargs and os.path.isfile(args.window_slider_kwargs):
-        with open(args.window_slider_kwargs, "r") as f:
-            window_slider_kwargs = yaml.safe_load(f) or {}
-    else:
-        window_slider_kwargs = {}
-
-    if args.thresholder_kwargs and os.path.isfile(args.thresholder_kwargs):
-        with open(args.thresholder_kwargs, "r") as f:
-            thresholder_kwargs = yaml.safe_load(f) or {}
-    else:
-        thresholder_kwargs = {}
-
-    # Load generator hyperparameters
-
-    if args.generator_hyperparameters and os.path.isfile(args.generator_hyperparameters):
-        with open(args.generator_hyperparameters, "r") as f:
-            generator_kwargs = yaml.safe_load(f) or {}
-    else:
-        generator_kwargs = {}
+    regressor_kwargs = handle_open_file(args.regressor_hyperparameters)
+    window_slider_kwargs = handle_open_file(args.window_slider_kwargs)
+    thresholder_kwargs = handle_open_file(args.thresholder_kwargs)
+    generator_kwargs = handle_open_file(args.generator_hyperparameters)
 
     # Import data generator
     generator_fn = import_object_from_string(args.generator)
@@ -131,7 +122,7 @@ if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
         "--generator", "src.data_generators.generation_script.generate_datasets",
-        "--generator-hyperparameters", "config/generators/amplitude-stepped-cons.yaml",
+        "--generator-hyperparameters", "config/generators/frequency-gradual-osc.yaml",
         #"--regressor", "src.models.regressors.linear_regression.LinearRegressionModel",
         "--regressor", "src.models.regressors.random_forest_regression.MultiOutputRandomForest",
         #"--regressor-hyperparameters", "path/to/model_hyperparams.yaml",
