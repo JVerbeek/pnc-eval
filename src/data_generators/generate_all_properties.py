@@ -29,7 +29,7 @@ for c in ["noise", "perturbation", "frequency", "amplitude"]:
             s_str = "stepped" if s else "gradual"
             osc_str = "osc" if osc else "cons"
 
-            with open(f"config/{c}-{s_str}-{osc_str}.yaml", "w") as f:
+            with open(f"config/generators/{c}-{s_str}-{osc_str}.yaml", "w") as f:
                 yaml.dump(params, f)
 
 

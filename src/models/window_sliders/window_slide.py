@@ -58,8 +58,6 @@ class WindowSlider(Slider):
         
         return self.window_start_index, self.window_end_index
 
-        
-
 class NonOverlappingWindowSlider(WindowSlider):
     def __init__(self, window_size):
         super().__init__(window_size, window_size)
