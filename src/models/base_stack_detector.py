@@ -40,28 +40,28 @@ class StackDetector:
                 raise ValueError("prediction_window_size must be at least as large as the window_slider's skip_length.")
 
         # Determine if the StackDetector is fittable
-        if self.regressor.is_fittable or self.thresholder.is_fittable:
-            self.is_fittable = True
+        if self.regressor.fittable or self.thresholder.fittable:
+            self.fittable = True
             self.is_fitted = False
         else:
-            self.is_fittable = False
+            self.fittable = False
             #self.is_fitted = True
         
 
     def fit(self, X_s, y_s=None):
 
         #Input checks:
-        if not self.is_fittable:
+        if not self.fittable:
            raise ValueError("This StackDetector has no fittable components. Neither regressor nor thresholder is fittable.")
 
-        if self.regressor.is_fittable:
+        if self.regressor.fittable:
             # Only give regressor access to normal data (before changepoint)
             # This requires that if no changepoints are present, y in y_s is the length of the data
             X_s_normal = [X[:y] for X, y in zip(X_s, y_s)]
 
             self.regressor.fit(X_s_normal)
 
-        if self.thresholder.is_fittable:
+        if self.thresholder.fittable:
 
             if y_s is None:
                 raise ValueError("y_s cannot be None if the thresholder is fittable.")
@@ -78,7 +78,7 @@ class StackDetector:
     #Possible future feature: use y_s for early stopping, but this would also need model support
     def predict(self, X_s, y_s = None):
 
-        if (self.thresholder.is_fittable or self.regressor.is_fittable) and not self.is_fitted:
+        if (self.thresholder.fittable or self.regressor.fittable) and not self.is_fitted:
             raise ValueError("This StackDetector is fittable but has not been fitted yet. Please call fit() before predict().")
 
         regressor_predictions = self._get_regressor_predictions(X_s)

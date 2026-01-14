@@ -1,12 +1,13 @@
-from models.regressors.base_regression_models import BatchFittableRegressionModel
+from src.models.regressors.base_regression_models import BatchFittableRegressionModel
 
-from helper_functions.data_transformation import transform_for_autoregressive_fit
+from src.helper_functions.data_transformation import transform_for_autoregressive_fit
 
 from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 
 class MultiOutputRandomForest(BatchFittableRegressionModel):
-    def __init__(self, model, **kwargs):
+    def __init__(self, **kwargs):
+        model = RandomForestRegressor(**kwargs)
         super().__init__(model)
         self.fittable = True
         self.multi_output = True
@@ -14,7 +15,6 @@ class MultiOutputRandomForest(BatchFittableRegressionModel):
 
         self.trained_prediction_window_size = None
 
-        self.model = RandomForestRegressor(**kwargs)
 
     def fit(self, X, y):
         # X: array-like of shape (n_windows, window_size)
@@ -33,8 +33,10 @@ class MultiOutputRandomForest(BatchFittableRegressionModel):
 
 
 class AutoRegressiveRandomForest(BatchFittableRegressionModel):
-    def __init__(self, model):
+    def __init__(self, **kwargs):
+        model = RandomForestRegressor(**kwargs)
         super().__init__(model)
+        
         self.fittable = True
         self.auto_regressive = True
         self.multi_output = False

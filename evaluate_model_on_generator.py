@@ -80,7 +80,7 @@ def main():
                        scorer=scorer, prediction_window_size=10)
 
     # Training (only if model is fittable)
-    if regressor.is_fittable:
+    if regressor.fittable:
         print("Model is fittable, training...")
         # If we want to add preprocessing steps, add them to this function call
         X_train, y_train, cps = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="train")
@@ -115,7 +115,8 @@ if __name__ == "__main__":
         sys.argv[0],
         "--generator", "src.data_generators.generation_script.generate_datasets",
         "--generator-hyperparameters", "config/amplitude-stepped-cons.yaml",
-        "--regressor", "src.models.regressors.linear_regression.LinearRegressionModel",
+        #"--regressor", "src.models.regressors.linear_regression.LinearRegressionModel",
+        "--regressor", "src.models.regressors.random_forest_regression.MultiOutputRandomForest",
         #"--regressor-hyperparameters", "path/to/model_hyperparams.yaml",
         "--window-slider-kwargs", "config/window_slider.yaml",
         "--thresholder-kwargs", "config/wald-constant-thresholder.yaml",
