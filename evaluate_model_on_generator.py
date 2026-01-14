@@ -1,14 +1,13 @@
 
 import argparse
 import importlib
-import json
 import os
 import yaml
 import sys
-import numpy as np
 
 from src.models.base_stack_detector import StackDetector
 
+from src.data_generators.generate_dataset import generate_dataset
 
 def import_object_from_string(dotted_path):
     """Import an object (function, class, etc.) from a dotted module path like 'module.submodule.func'."""
@@ -35,6 +34,7 @@ def main():
     # Parse model and generator kwargs from YAML 
     # If the files are not provided, use empty dicts as kwargs
     # Load regressor, window-slider, and thresholder hyperparameters
+    # TODO: add error handling for YAML loading
     if args.regressor_hyperparameters and os.path.isfile(args.regressor_hyperparameters):
         with open(args.regressor_hyperparameters, "r") as f:
             regressor_kwargs = yaml.safe_load(f) or {}
@@ -108,57 +108,6 @@ def main():
             ax.plot(X_t[:len(p)], p)
             ax.fill_between(X_t.flatten()[sd.window_slider.window_size - sd.window_slider.skip_length:], ax.get_ylim()[0], ax.get_ylim()[1], where=p > 0, color="red", alpha=0.3)
             plt.show()
-
-def generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters, generator_name, set_name="train"):
-    # Check if data has been generated before:
-
-    # Convert hyperparameter kwargs dict to a folder name
-    if generator_hyperparameters:
-        # Create a concise, readable string from generator_kwargs for folder naming
-        import hashlib
-        # Use a hash of the kwargs string for a robust folder 
-        generator_kwargs_str = json.dumps(generator_kwargs, sort_keys=True)
-        
-        hash_object = hashlib.sha256(generator_kwargs_str.encode())
-        generator_kwargs_str = hash_object.hexdigest()[:32] #technically not unique, but hopefully fine
-
-    else: # no hyperparameters provided, e.g. args.generator_hyperparameters is None
-        generator_kwargs_str = "default"
-
-    generated_data_folder = os.path.join("generated_data", generator_name.replace('.', '_'), generator_kwargs_str)
-
-    os.makedirs(generated_data_folder, exist_ok=True)
-
-    X_file = os.path.join(generated_data_folder, f"X_{set_name}.npz")
-    y_file = os.path.join(generated_data_folder, f"y_{set_name}.npz")
-    cps_file = os.path.join(generated_data_folder, f"cps_{set_name}.npz")
-    params_file = os.path.join(generated_data_folder, f"params_{set_name}.json")
-
-
-    if not os.path.exists(X_file) or not os.path.exists(y_file) or not os.path.exists(cps_file) or not os.path.exists(params_file):
-        X, y, cps, params = generator_fn(properties=generator_kwargs)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
-        # Save the generated data with explicit keys
-        np.savez_compressed(X_file, X=X) #check if this works for lists
-        np.savez_compressed(y_file, y=y)
-        np.savez_compressed(cps_file, cps=cps)
-        # Save params as JSON (assume params is a plain dict)
-        #print(params)
-        #with open(params_file, "w") as f:
-        #    json.dump(params, f, indent=2)
-    else:
-    # Load the generated data using explicit keys
-        X = np.load(X_file)["X"]
-        y = np.load(y_file)["y"]
-        cps = np.load(cps_file)["cps"]
-        #with open(params_file, "r") as f:
-        #    params = json.load(f)
-
-
-
-    # Currently always standardize the y data, could implement generic preprocessing later?
-    y = [(y_instance - y_instance.mean())/y_instance.std() for y_instance in y]
-
-    return X, y, cps#, params
 
 # For testing purposes, provide defaults if not running as a script
 if __name__ == "__main__":
