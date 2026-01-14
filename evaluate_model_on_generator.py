@@ -131,7 +131,7 @@ if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
         "--generator", "src.data_generators.generation_script.generate_datasets",
-        "--generator-hyperparameters", "config/amplitude-stepped-cons.yaml",
+        "--generator-hyperparameters", "config/generators/amplitude-stepped-cons.yaml",
         #"--regressor", "src.models.regressors.linear_regression.LinearRegressionModel",
         "--regressor", "src.models.regressors.random_forest_regression.MultiOutputRandomForest",
         #"--regressor-hyperparameters", "path/to/model_hyperparams.yaml",
