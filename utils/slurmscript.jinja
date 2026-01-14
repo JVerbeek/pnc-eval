@@ -15,4 +15,4 @@ config={{ config }}
 model=$(awk -v ArrayTaskID=$SLURM_ARRAY_TASK_ID '$1==ArrayTaskID {print $2}' $config)
 generator=$(awk -v ArrayTaskID=$SLURM_ARRAY_TASK_ID '$1==ArrayTaskID {print $3}' $config)
 
-evaluate_model_on_generator.py --generator-hyperparameters generator --model-hyperparameters model
+python3 evaluate_model_on_generator.py --generator-hyperparameters generator --model-hyperparameters model

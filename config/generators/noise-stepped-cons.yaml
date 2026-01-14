@@ -1,31 +1,31 @@
 amplitude_dist:
   dist: uniform
   dist_params:
-  - 0
-  - 100
+  - 5
+  - 10
 change_type: noise
 frequency_dist:
   dist: uniform
   dist_params:
-  - 0
-  - 100
+  - 5
+  - 10
 glob_noise_dist: norm
 glob_noise_params:
 - 0
 - 1
-location: 156
+location: 163
 n_datapoints: 500
 n_datasets: 10
 noise_dist:
-  dist: uniform
-  dist_params:
-  - 0
-  - 100
-oscillating: false
-perturbation_dist:
   dist: norm
   dist_params:
   - 0
+  - 1
+oscillating: false
+perturbation_dist:
+  dist: uniform
+  dist_params:
+  - 5
   - 10
 stepped: true
 time_range:

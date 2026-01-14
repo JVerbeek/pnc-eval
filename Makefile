@@ -4,8 +4,14 @@
 check_clean:
     @echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} = y ]
 	
-clean: check_clean
+clean_experiments: check_clean
 	rm -r experiments
 
-config: clean
+configs: clean_experiments
 	./utils/generate-config-txt.sh
+
+slurm_scripts: configs
+	./utils/generate-slurm-scripts.py
+
+jobs: slurm_scripts
+	

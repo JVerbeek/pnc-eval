@@ -12,7 +12,7 @@ def generate_constant_signal(loc, scale, n_datapoints):
     y = scipy.stats.norm.rvs(loc=loc, scale=scale, size=n_datapoints)   # Gaussian, for now
     return y
 
-def linear_increase_fn(first_param, second_param,  location, stepped, exponent=1):
+def linear_increase_fn(first_param, second_param,  location, stepped, exponent=3):
     """Generates some function with a change. If the change is a step, then the change jumps from first_param to second_param.
     If the change is not stepped, then the changes happens linearly and gradually, with rate-of-change (second_param - first_param).
     As an example, an stepped change in mean might have a jump from 0 to 10 at location 50, while a non-stepped change might start increasing with rate-of-change 10 at location 50.
@@ -20,7 +20,7 @@ def linear_increase_fn(first_param, second_param,  location, stepped, exponent=1
     if stepped:
         return lambda t: np.where(t < location, first_param, second_param)
     else:
-        return lambda t: np.where(t < location, first_param, (first_param + (second_param - first_param) * t / (max(t) - min(t)) ** exponent))
+        return lambda t: np.where(t < location, first_param, (first_param + t ** exponent *(second_param-first_param)) / (max(t) - min(t)))
 
 def generate_data_with_params(**params):
     """Creates a signal with a change point. For the given parameters, creates functions with those parameters, and compiles a signal additively."""
@@ -35,17 +35,22 @@ def generate_data_with_params(**params):
         pname = p.split("_")
         if pname[0] != "params":
             continue
+        print(*params[p])
         globals()[pname[1]+"_fun"] = linear_increase_fn(*params[p], location=time_index, stepped=stepped)
 
     if params["oscillating"]: # Function composition is something you have to be specific about
         x = amplitude_fun(t) * np.cos(frequency_fun(t) * t) + perturbation_fun(t) + noise_fun(t) * ss.norm.rvs(0, 0.1, params["n_datapoints"])
     else:
-        x = noise_fun(t) + ss.norm.rvs(0, 0.1, params["n_datapoints"]) + perturbation_fun(t)
+        x = noise_fun(t) * ss.norm.rvs(0, 0.1, params["n_datapoints"]) + perturbation_fun(t)
 
     if params["change_type"] != "perturbation": # (else you'd remove the step)
         x[:location] -= x[:location][-1] - x[location]
     elif params["change_type"] == "perturbation" and not params["stepped"]:  # then actually we do want the signals to attach
         x[:location] -= x[:location][-1] - x[location]
+
+    if params["change_type"] == "noise":
+        x[:location] -= x[:location].mean()
+        x[location:] -= x[location:].mean()
 
     return t, x
 
@@ -76,13 +81,18 @@ def sample_parameters(time_range, change_type, change_params):
     """
     param_dict = {"time_range": time_range}   # Dict to store dicts in
     for c in list(change_params.keys()):
+        cname = c.split("_")[0]
         params = change_params[c]
         distribution_name = get_distribution(params["dist"])
         distribution_params = params["dist_params"]   # returns list of distribution parameters
         val0 = sample_from_distribution(distribution_name, distribution_params)
         val1 = sample_from_distribution(distribution_name, distribution_params)
-        if c != change_type:   # If the change is not the one we are looking for, then the second value can be the same as the first (i.e. no change in that property)
+        if cname == "noise":
+            val0 = val0 ** 2
+            val1 = val1 ** 2
+        if cname != change_type:   # If the change is not the one we are looking for, then the second value can be the same as the first (i.e. no change in that property)
              val1 = val0
+             
         param_dict["params_"+c] = (val0, val1)
     return param_dict
 
@@ -107,8 +117,13 @@ def generate_datasets(properties={}):
     return ts, xs, ys, param_dict
 
 def test():
-    ts, xs, ys, _ = generate_datasets(datapoints=100, datasets=10, time_range=(0, 1))
-    plt.plot(ts[0], xs[0])
+    with open("config/generators/perturbation-gradual-cons.yaml") as f:
+        properties = yaml.safe_load(f)
+    ts, xs, ys, _ = generate_datasets(properties)
+    plt.plot(ts[0], xs[0], marker="x", color="steelblue", markersize=20)
+    plt.xticks([])
+    plt.yticks([])
+    plt.savefig("src/data_generators/demo-viz/blue-gradual-mean.png", transparent=True)
     plt.show()
     return
 

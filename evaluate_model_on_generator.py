@@ -24,7 +24,7 @@ def import_object_from_string(dotted_path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--generator', required=True, help='Dotted path to the generator function')
+    parser.add_argument('--generator', default="src.data_generators.generation_script.generate_datasets", required=True, help='Dotted path to the generator function')
     parser.add_argument('--generator-hyperparameters', default=None, help='YAML file of keyword arguments for the generator function (default: None, use empty dict)') 
     parser.add_argument('--model', required=True, help='Dotted path to the model function')
     parser.add_argument('--model-hyperparameters', default=None, help='YAML file of keyword arguments for the model class (default: None, use empty dict)')
@@ -44,6 +44,7 @@ def main():
         model_kwargs = {}
 
     # Load generator hyperparameters
+
     if args.generator_hyperparameters and os.path.isfile(args.generator_hyperparameters):
         with open(args.generator_hyperparameters, "r") as f:
             generator_kwargs = yaml.safe_load(f) or {}
@@ -54,11 +55,10 @@ def main():
     generator_fn = import_object_from_string(args.generator)
     model_cls = import_object_from_string(args.model)
     metric = import_object_from_string(args.metric)
-    scorer = import_object_from_string(args.scorer)()
+    scorer = import_object_from_string(args.scorer)(decay=1)
 
     # Training
     # Check if data has been generated before:
-
     # Convert hyperparameter kwargs dict to a folder name
     if args.generator_hyperparameters:
         # Create a concise, readable string from generator_kwargs for folder naming
@@ -68,6 +68,7 @@ def main():
         
         hash_object = hashlib.sha256(generator_kwargs_str.encode())
         generator_kwargs_str = hash_object.hexdigest()[:32] #technically not unique, but hopefully fine
+        
 
     else:
         generator_kwargs_str = "default"
@@ -90,28 +91,47 @@ def main():
 
     y_train = [(y - y.mean())/y.std() for y in y_train]
 
-    alpha = 10e-25
+    alpha = 0.6
     print(f"Wald constant threshold is {-np.log(alpha)}")
-    sd = StackDetector(window_slider=WindowSlider(window_size=20, skip_length=2), regressor=model_cls(), 
-                  thresholder=WaldConstantThresholder(alpha=alpha), 
-                  scorer=scorer, prediction_window_size=10, verbose=True)
-    pred = sd.fit_predict(X_train, y_train)
+    sd = StackDetector(window_slider=WindowSlider(window_size=30, skip_length=1), 
+                        regressor=model_cls(), 
+                        thresholder=WaldConstantThresholder(alpha=alpha), 
+                        scorer=scorer, 
+                        prediction_window_size=10, 
+                        verbose=True)
+    scores = sd.fit_predict(X_train, y_train)
+    regr_pred = sd._get_regressor_predictions(y_train)
+    scores = sd.scorer.score(y_train, regr_pred)
 
     import matplotlib.pyplot as plt 
-    for X_t, y_t, p in zip(X_train, y_train, pred):
-        fig, ax = plt.subplots(1, 1)
-        ax.plot(X_t, y_t)
-        ax.plot(X_t[:len(p)], p)
-        ax.fill_between(X_t.flatten()[sd.window_slider.window_size - sd.window_slider.skip_length:], ax.get_ylim()[0], ax.get_ylim()[1], where=p > 0, color="red", alpha=0.3)
+    for X_t, y_t, rp, scores in zip(X_train, y_train, regr_pred, scores):
+        fig, ax = plt.subplots(2, 1, figsize=(15, 10))
+        cp_plot = np.concatenate((scores, np.zeros(((sd.window_slider.window_size - sd.window_slider.skip_length),))))
+        ax[0].plot(X_t, y_t, "kx", markersize=20, label="data")
+        # ax.plot(X_t[:len(cp)], cp, linestyle="-", linewidth=3, color="r", label="changepoint locs")
+        ax[0].plot(X_t, np.concatenate((rp, np.zeros(len(X_t)-len(cp)))), linestyle="-", linewidth=3, color="r", label="regressor prediction")
+        ax[1].plot(X_t, np.concatenate((scores, np.zeros((sd.window_slider.window_size-sd.window_slider.skip_length),))), linestyle=":", linewidth=3, color="b", label="cusum score")
+        ax[1].axhline(-np.log(alpha), linestyle="-", linewidth=3, color="k", label="wald constant threshold")
+        ax[0].set_xlabel("t", fontsize=30)
+        ax[0].tick_params(axis='both', which='major', labelsize=15)
+        ax[1].tick_params(axis='both', which='major', labelsize=15)
+        ax[0].set_ylabel("y", fontsize=30)
+        ax[1].set_xlabel("t", fontsize=30)
+        ax[1].set_ylabel("score", fontsize=30)
+        ax[0].fill_between(X_t.flatten(), ax[0].get_ylim()[0], ax[0].get_ylim()[1], where=cp_plot > 0, color="red", alpha=0.3, label="CUSUM > threshold")
+        ax[1].fill_between(X_t.flatten(), ax[1].get_ylim()[0], ax[1].get_ylim()[1], where=cp_plot > 0, color="red", alpha=0.3, label="CUSUM > threshold")
+        plt.suptitle("GP regression on gradual frequency change in oscillating data", fontsize=30)
+        plt.legend(fontsize=15)
+        plt.savefig("/home/janneke/repos/pnc-eval/constant-change-cusum.png", dpi=300)
         plt.show()
 
-# For testing purposes, provide defaults if not running as a scriptproperties
+# # For testing purposes, provide defaults if not running as a scriptproperties
 if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
         "--generator", "src.data_generators.generation_script.generate_datasets",
-        "--model", "src.models.regressors.linear_regression.LinearRegressionModel",
+        "--model", "src.models.regressors.gaussian_process.GPRModel",
         "--model-hyperparameters", "path/to/model_hyperparams.yaml",
-        "--generator-hyperparameters", "config/amplitude-stepped-cons.yaml"
+        "--generator-hyperparameters", "config/generators/frequency-gradual-osc.yaml"
     ]
     main()
