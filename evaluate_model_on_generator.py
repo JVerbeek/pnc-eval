@@ -4,6 +4,8 @@ import importlib
 import os
 import yaml
 import sys
+import numpy as np
+
 
 from src.models.base_stack_detector import StackDetector
 
@@ -63,85 +65,78 @@ def main():
 
     # Import data generator
     generator_fn = import_object_from_string(args.generator)
-    model_cls = import_object_from_string(args.model)
-    metric = import_object_from_string(args.metric)
-    scorer = import_object_from_string(args.scorer)(decay=1)
+    
+    # Import window slider, regressor, thresholder, scorer
+    regressor_cls = import_object_from_string(args.regressor)
+    regressor = regressor_cls(**regressor_kwargs)
+    #metric = import_object_from_string(args.metric)
+    scorer = import_object_from_string(args.scorer)()
 
-    # Training
-    # Check if data has been generated before:
-    # Convert hyperparameter kwargs dict to a folder name
-    if args.generator_hyperparameters:
-        # Create a concise, readable string from generator_kwargs for folder naming
-        import hashlib
-        # Use a hash of the kwargs string for a robust folder 
-        generator_kwargs_str = json.dumps(generator_kwargs, sort_keys=True)
-        
-        hash_object = hashlib.sha256(generator_kwargs_str.encode())
-        generator_kwargs_str = hash_object.hexdigest()[:32] #technically not unique, but hopefully fine
-        
+    window_slider_cls = import_object_from_string(args.window_slider)
+    window_slider = window_slider_cls(**window_slider_kwargs)
+    thresholder_cls = import_object_from_string(args.thresholder)
+    thresholder = thresholder_cls(**thresholder_kwargs)
 
-    else:
-        generator_kwargs_str = "default"
+    sd = StackDetector(window_slider=window_slider, regressor=regressor, 
+                       thresholder=thresholder, 
+                       scorer=scorer, prediction_window_size=10)
 
-    generated_data_folder = os.path.join("generated_data", args.generator.replace('.', '_'), generator_kwargs_str)
+    # Training (only if model is fittable)
+    if regressor.fittable:
+        print("Model is fittable, training...")
+        # If we want to add preprocessing steps, add them to this function call
+        X_train, y_train, cps = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="train")
 
-    X_file = os.path.join(generated_data_folder, "X_train.npz")
-    y_file = os.path.join(generated_data_folder, "y_train.npz")
-    os.makedirs(generated_data_folder, exist_ok=True)
+        sd.fit(X_train, y_train)
 
-    if not os.path.exists(X_file) or not os.path.exists(y_file):
-        X_train, y_train, cps, params = generator_fn(properties=generator_kwargs)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
-        # Save the generated data with explicit keys
-        np.savez_compressed(X_file, X_train=X_train) #check if this works for lists
-        np.savez_compressed(y_file, y_train=y_train)
-    else:
-    # Load the generated data using explicit keys
-        X_train = np.load(X_file)['X_train']
-        y_train = np.load(y_file)['y_train']
 
-    y_train = [(y - y.mean())/y.std() for y in y_train]
+    # Validation for hyperparameter selection (not implemented yet)
+    #TODO: Implement hyperparameter selection
 
-    alpha = 0.6
-    print(f"Wald constant threshold is {-np.log(alpha)}")
-    sd = StackDetector(window_slider=WindowSlider(window_size=30, skip_length=1), 
-                        regressor=model_cls(), 
-                        thresholder=WaldConstantThresholder(alpha=alpha), 
-                        scorer=scorer, 
-                        prediction_window_size=10, 
-                        verbose=True)
-    scores = sd.fit_predict(X_train, y_train)
-    regr_pred = sd._get_regressor_predictions(y_train)
-    scores = sd.scorer.score(y_train, regr_pred)
+    # Testing
 
-    import matplotlib.pyplot as plt 
-    for X_t, y_t, rp, scores in zip(X_train, y_train, regr_pred, scores):
-        fig, ax = plt.subplots(2, 1, figsize=(15, 10))
-        cp_plot = np.concatenate((scores, np.zeros(((sd.window_slider.window_size - sd.window_slider.skip_length),))))
-        ax[0].plot(X_t, y_t, "kx", markersize=20, label="data")
-        # ax.plot(X_t[:len(cp)], cp, linestyle="-", linewidth=3, color="r", label="changepoint locs")
-        ax[0].plot(X_t, np.concatenate((rp, np.zeros(len(X_t)-len(cp)))), linestyle="-", linewidth=3, color="r", label="regressor prediction")
-        ax[1].plot(X_t, np.concatenate((scores, np.zeros((sd.window_slider.window_size-sd.window_slider.skip_length),))), linestyle=":", linewidth=3, color="b", label="cusum score")
-        ax[1].axhline(-np.log(alpha), linestyle="-", linewidth=3, color="k", label="wald constant threshold")
-        ax[0].set_xlabel("t", fontsize=30)
-        ax[0].tick_params(axis='both', which='major', labelsize=15)
-        ax[1].tick_params(axis='both', which='major', labelsize=15)
-        ax[0].set_ylabel("y", fontsize=30)
-        ax[1].set_xlabel("t", fontsize=30)
-        ax[1].set_ylabel("score", fontsize=30)
-        ax[0].fill_between(X_t.flatten(), ax[0].get_ylim()[0], ax[0].get_ylim()[1], where=cp_plot > 0, color="red", alpha=0.3, label="CUSUM > threshold")
-        ax[1].fill_between(X_t.flatten(), ax[1].get_ylim()[0], ax[1].get_ylim()[1], where=cp_plot > 0, color="red", alpha=0.3, label="CUSUM > threshold")
-        plt.suptitle("GP regression on gradual frequency change in oscillating data", fontsize=30)
-        plt.legend(fontsize=15)
-        plt.savefig("/home/janneke/repos/pnc-eval/constant-change-cusum.png", dpi=300)
-        plt.show()
+    X_test, y_test, cps = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="test")
 
-# # For testing purposes, provide defaults if not running as a scriptproperties
+
+    pred_test = sd.predict(X_test, y_test)
+
+
+    # optional test plotting:
+    if args.plot_test_results:
+        import matplotlib.pyplot as plt 
+        for X_t, y_t, rp, scores in zip(X_test, y_test, pred_test, scores):
+            fig, ax = plt.subplots(2, 1, figsize=(15, 10))
+            cp_plot = np.concatenate((scores, np.zeros(((sd.window_slider.window_size - sd.window_slider.skip_length),))))
+            ax[0].plot(X_t, y_t, "kx", markersize=20, label="data")
+            # ax.plot(X_t[:len(cp)], cp, linestyle="-", linewidth=3, color="r", label="changepoint locs")
+            ax[0].plot(X_t, np.concatenate((rp, np.zeros(len(X_t)-len(cp)))), linestyle="-", linewidth=3, color="r", label="regressor prediction")
+            ax[1].plot(X_t, np.concatenate((scores, np.zeros((sd.window_slider.window_size-sd.window_slider.skip_length),))), linestyle=":", linewidth=3, color="b", label="cusum score")
+            ax[1].axhline(-np.log(thresholder.alpha), linestyle="-", linewidth=3, color="k", label="wald constant threshold")
+            ax[0].set_xlabel("t", fontsize=30)
+            ax[0].tick_params(axis='both', which='major', labelsize=15)
+            ax[1].tick_params(axis='both', which='major', labelsize=15)
+            ax[0].set_ylabel("y", fontsize=30)
+            ax[1].set_xlabel("t", fontsize=30)
+            ax[1].set_ylabel("score", fontsize=30)
+            ax[0].fill_between(X_t.flatten(), ax[0].get_ylim()[0], ax[0].get_ylim()[1], where=cp_plot > 0, color="red", alpha=0.3, label="CUSUM > threshold")
+            ax[1].fill_between(X_t.flatten(), ax[1].get_ylim()[0], ax[1].get_ylim()[1], where=cp_plot > 0, color="red", alpha=0.3, label="CUSUM > threshold")
+            plt.suptitle("GP regression on gradual frequency change in oscillating data", fontsize=30)
+            plt.legend(fontsize=15)
+            plt.savefig("/home/janneke/repos/pnc-eval/constant-change-cusum.png", dpi=300)
+            plt.show()
+
+
+# For testing purposes, provide defaults if not running as a script
 if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
         "--generator", "src.data_generators.generation_script.generate_datasets",
-        "--model", "src.models.regressors.gaussian_process.GPRModel",
-        "--model-hyperparameters", "path/to/model_hyperparams.yaml",
-        "--generator-hyperparameters", "config/generators/frequency-gradual-osc.yaml"
+        "--generator-hyperparameters", "config/amplitude-stepped-cons.yaml",
+        #"--regressor", "src.models.regressors.linear_regression.LinearRegressionModel",
+        "--regressor", "src.models.regressors.random_forest_regression.MultiOutputRandomForest",
+        #"--regressor-hyperparameters", "path/to/model_hyperparams.yaml",
+        "--window-slider-kwargs", "config/window_slider.yaml",
+        "--thresholder-kwargs", "config/wald-constant-thresholder.yaml",
+        "--plot-test-results"
     ]
     main()
