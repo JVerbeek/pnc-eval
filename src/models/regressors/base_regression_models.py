@@ -36,6 +36,6 @@ class BatchFittableRegressionModel(FittableRegressionModel):
 
     @abc.abstractmethod
     def fit(self, X, y):
-        # X: array-like of shape (n_windows, window_size)
+        # X: array-like of shape (n_windows, window_size+exogenous_features_size)
         # y: array-like of shape (n_windows, prediction_window_size)
         pass
