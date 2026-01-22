@@ -22,16 +22,16 @@ def generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters, 
 
     os.makedirs(generated_data_folder, exist_ok=True)
 
-    X_file = os.path.join(generated_data_folder, f"X_{set_name}.npz")
+    t_file = os.path.join(generated_data_folder, f"t_{set_name}.npz")
     y_file = os.path.join(generated_data_folder, f"y_{set_name}.npz")
     cps_file = os.path.join(generated_data_folder, f"cps_{set_name}.npz")
     params_file = os.path.join(generated_data_folder, f"params_{set_name}.json")
 
 
-    if not os.path.exists(X_file) or not os.path.exists(y_file) or not os.path.exists(cps_file) or not os.path.exists(params_file):
-        X, y, cps, params = generator_fn(properties=generator_kwargs)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
+    if not os.path.exists(t_file) or not os.path.exists(y_file) or not os.path.exists(cps_file) or not os.path.exists(params_file):
+        t, y, cps, params = generator_fn(properties=generator_kwargs)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
         # Save the generated data with explicit keys
-        np.savez_compressed(X_file, X=X) #check if this works for lists
+        np.savez_compressed(t_file, t=t) #check if this works for lists
         np.savez_compressed(y_file, y=y)
         np.savez_compressed(cps_file, cps=cps)
         # Save params as JSON (assume params is a plain dict)
@@ -40,7 +40,7 @@ def generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters, 
         #    json.dump(params, f, indent=2)
     else:
     # Load the generated data using explicit keys
-        X = np.load(X_file)["X"]
+        t = np.load(t_file)["t"]
         y = np.load(y_file)["y"]
         cps = np.load(cps_file)["cps"]
         #with open(params_file, "r") as f:
@@ -51,4 +51,4 @@ def generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters, 
     # Currently always standardize the y data, could implement generic preprocessing later?
     y = [(y_instance - y_instance.mean())/y_instance.std() for y_instance in y]
 
-    return X, y, cps#, params
+    return t, y, cps#, params
