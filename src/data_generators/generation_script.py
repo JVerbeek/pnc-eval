@@ -12,15 +12,31 @@ def generate_constant_signal(loc, scale, n_datapoints):
     y = scipy.stats.norm.rvs(loc=loc, scale=scale, size=n_datapoints)   # Gaussian, for now
     return y
 
-def linear_increase_fn(first_param, second_param,  location, stepped, exponent=3):
+def exponential_increase_fn(first_param, second_param,  location, stepped, exponent=3):
     """Generates some function with a change. If the change is a step, then the change jumps from first_param to second_param.
-    If the change is not stepped, then the changes happens linearly and gradually, with rate-of-change (second_param - first_param).
+    If the change is not stepped, then the changes happens exponentially and gradually, with rate-of-change (second_param - first_param).
     As an example, an stepped change in mean might have a jump from 0 to 10 at location 50, while a non-stepped change might start increasing with rate-of-change 10 at location 50.
     """
     if stepped:
         return lambda t: np.where(t < location, first_param, second_param)
     else:
         return lambda t: np.where(t < location, first_param, (first_param + t ** exponent *(second_param-first_param)) / (max(t) - min(t)))
+
+def make_signal(params):
+    if params["oscillating"]: 
+        x = amplitude_fun(t) * np.cos(frequency_fun(t) * t) + perturbation_fun(t) + noise_fun(t) * ss.norm.rvs(0, 0.1, params["n_datapoints"])
+    else:
+        x = noise_fun(t) * ss.norm.rvs(0, 0.1, params["n_datapoints"]) + perturbation_fun(t)
+    return x
+
+def attach_signal_halves(x, location):
+    if params["change_type"] != "perturbation": 
+        x[:location] -= x[:location][-1] - x[location]
+
+    elif params["change_type"] == "perturbation" and not params["stepped"]:  # then actually we do want the signals to attach
+        x[:location] -= x[:location][-1] - x[location]
+
+    return x
 
 def generate_data_with_params(**params):
     """Creates a signal with a change point. For the given parameters, creates functions with those parameters, and compiles a signal additively."""
@@ -31,22 +47,14 @@ def generate_data_with_params(**params):
     glob_noise_dist = get_distribution(params["glob_noise_dist"])
     glob_noise = sample_from_distribution(glob_noise_dist, params["glob_noise_params"])
 
-    for p in params.keys():  # Update symbol table with appropriate function names
+    for p in params.keys(): 
         pname = p.split("_")
         if pname[0] != "params":
             continue
-        print(*params[p])
-        globals()[pname[1]+"_fun"] = linear_increase_fn(*params[p], location=time_index, stepped=stepped)
+        globals()[pname[1]+"_fun"] = exponential_increase_fn(*params[p], location=time_index, stepped=stepped)
 
-    if params["oscillating"]: # Function composition is something you have to be specific about
-        x = amplitude_fun(t) * np.cos(frequency_fun(t) * t) + perturbation_fun(t) + noise_fun(t) * ss.norm.rvs(0, 0.1, params["n_datapoints"])
-    else:
-        x = noise_fun(t) * ss.norm.rvs(0, 0.1, params["n_datapoints"]) + perturbation_fun(t)
-
-    if params["change_type"] != "perturbation": # (else you'd remove the step)
-        x[:location] -= x[:location][-1] - x[location]
-    elif params["change_type"] == "perturbation" and not params["stepped"]:  # then actually we do want the signals to attach
-        x[:location] -= x[:location][-1] - x[location]
+        x = make_signal(params)
+        x = attach_signal_halves(x, location)
 
     if params["change_type"] == "noise":
         x[:location] -= x[:location].mean()
@@ -87,6 +95,7 @@ def sample_parameters(time_range, change_type, change_params):
         distribution_params = params["dist_params"]   # returns list of distribution parameters
         val0 = sample_from_distribution(distribution_name, distribution_params)
         val1 = sample_from_distribution(distribution_name, distribution_params)
+
         if cname == "noise":
             val0 = val0 ** 2
             val1 = val1 ** 2
