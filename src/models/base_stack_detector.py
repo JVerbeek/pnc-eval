@@ -47,6 +47,8 @@ class StackDetector:
             self.fittable = False
             #self.is_fitted = True
         
+    def online_fit(self, y, t=None, X=None):
+        raise NotImplementedError("Online fitting is not yet implemented for StackDetector.")
 
     def fit(self, y_s, t_s=None, X_s=None, cps_s=None):
 
@@ -55,6 +57,12 @@ class StackDetector:
            raise ValueError("This StackDetector has no fittable components. Neither regressor nor thresholder is fittable.")
 
         if self.regressor.fittable:
+
+            if self.regressor.fit_method == "online":
+                raise ValueError("Online fitting is only supported through .online_fit(). Please use that method for online fitting.")
+            elif self.regressor.fit_method != "batch":
+                raise ValueError(f"Unknown regressor fit_method: {self.regressor.fit_method}. Supported methods are 'batch' and 'online' (only through .online_fit()).")
+
             # Only give regressor access to normal data (before changepoint)
             # This requires that if no changepoints are present, y in y_s is the length of the data
             if cps_s is not None:
@@ -68,10 +76,14 @@ class StackDetector:
                 else:
                     X_s_normal = None
             else: 
-                Warning("cps_s is None, assuming all data is normal for regressor fitting.")
+                raise UserWarning("cps_s is None, assuming all data is normal for regressor fitting.")
+            
                 y_s_normal, t_s_normal, X_s_normal = y_s, t_s, X_s
 
-            self.regressor.fit(y_s_normal, t_s_normal, X_s_normal)
+            # Apply window slider to normal data to get numpy arrays for fitting somewhat fast
+
+
+            #self.regressor.fit(y_combined=, t_combined=, y_s=)
 
         if self.thresholder.fittable:
 
