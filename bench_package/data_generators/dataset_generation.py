@@ -120,16 +120,16 @@ def generate_datasets(properties={}):
     change_params = {k: properties[k] for k in ["perturbation_dist", "noise_dist", "frequency_dist", "amplitude_dist"]}
     properties_filtered = {k:v for k, v in properties.items() if k not in change_params.keys()}
     param_dict = generate_parameters(properties["n_datasets"], properties["n_datapoints"], properties["time_range"], properties_filtered, change_params)
-    ts, xs, ys = [], [], []
+    ts, xs, cps = [], [], []
     for (_, params) in param_dict.items():
         t, x = generate_data_with_params(**params)   # vector, matrix, index
-        ts.append(t); xs.append(x); ys.append(params["location"])
-    return ts, xs, ys, param_dict
+        ts.append(t); xs.append(x); cps.append(params["location"])
+    return ts, xs, cps, param_dict
 
 def test():
     with open("config/generators/perturbation-gradual-cons.yaml") as f:
         properties = yaml.safe_load(f)
-    ts, xs, ys, _ = generate_datasets(properties)
+    ts, xs, cps, _ = generate_datasets(properties)
     plt.plot(ts[0], xs[0], marker="x", color="steelblue", markersize=20)
     plt.xticks([])
     plt.yticks([])
