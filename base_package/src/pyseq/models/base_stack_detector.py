@@ -1,9 +1,8 @@
 import numpy as np
 import abc
 
-from src.models.window_sliders.window_slide import Slider
-
-from src.models.prediction_combiners.prediction_combiners import select_first, select_last, select_mean
+from .prediction_combiners.prediction_combiners import select_first, select_last, select_mean
+from .window_sliders.window_slide import Slider
 
 class StackDetector:
     def __init__(self, window_slider, regressor, scorer, thresholder, prediction_window_size=1, prediction_selection_strategy='first'):

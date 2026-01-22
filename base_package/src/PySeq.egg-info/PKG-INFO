@@ -1,0 +1,30 @@
+Metadata-Version: 2.4
+Name: PySeq
+Version: 2026.0.0
+Summary: Changepoint detection benchmarking package.
+Author-email: Roel Bouman <roel.bouman@ru.nl>, Janneke Verbeek <janneke.verbeek@ru.nl>
+Maintainer-email: Roel Bouman <roel.bouman@ru.nl>, Janneke Verbeek <janneke.verbeek@ru.nl>
+License-Expression: MIT
+Project-URL: Homepage, https://example.com
+Project-URL: Documentation, https://readthedocs.org
+Project-URL: Repository, https://github.com/me/spam.git
+Project-URL: Bug Tracker, https://github.com/me/spam/issues
+Project-URL: Changelog, https://github.com/me/spam/blob/master/CHANGELOG.md
+Keywords: changepoint detection
+Classifier: Development Status :: 4 - Beta
+Classifier: Programming Language :: Python
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: matplotlib
+Requires-Dist: scikit-learn
+Requires-Dist: pyyaml
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Provides-Extra: tensorflow
+Requires-Dist: gpflow; extra == "tensorflow"
+Requires-Dist: tensorflow; extra == "tensorflow"
+Requires-Dist: tensorflow-probability; extra == "tensorflow"
+
+Hello World

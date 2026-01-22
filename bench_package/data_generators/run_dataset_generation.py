@@ -2,7 +2,7 @@ import json
 import os
 import numpy as np
 
-def generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters, generator_name, set_name="train"):
+def make_dataset(generator_kwargs, generator_fn, generator_hyperparameters, generator_name, set_name="train"):
     # Check if data has been generated before:
 
     # Convert hyperparameter kwargs dict to a folder name
