@@ -1,8 +1,6 @@
 import numpy as np
 import abc
 
-from src.models.window_sliders.window_slide import Slider
-
 from src.models.prediction_combiners.prediction_combiners import select_first, select_last, select_mean
 
 class StackDetector:
@@ -11,7 +9,6 @@ class StackDetector:
         self.regressor = regressor
         self.scorer = scorer
         self.thresholder = thresholder
-        self.prediction_window_size = prediction_window_size
         self.prediction_selection_strategy = prediction_selection_strategy
 
         # Input checks:
@@ -56,6 +53,38 @@ class StackDetector:
         if not self.fittable:
            raise ValueError("This StackDetector has no fittable components. Neither regressor nor thresholder is fittable.")
 
+
+        # Only give regressor access to normal data (before changepoint)
+        # This requires that if no changepoints are present, y in y_s is the length of the data
+        if cps_s is not None:
+            y_s_normal = [y[:cp] for y, cp in zip(y_s, cps_s)]
+            if t_s is not None:
+                t_s_normal = [t[:cp] for t, cp in zip(t_s, cps_s)]
+            else:
+                t_s_normal = None
+            if X_s is None:
+                X_s_normal = [X[:cp] for X, cp in zip(X_s, cps_s)]
+            else:
+                X_s_normal = None
+        else: 
+            raise UserWarning("cps_s is None, assuming all data is normal for regressor fitting.")
+        
+
+        # Apply window slider to normal data to get numpy arrays for fitting somewhat fast
+        predictor_windows_list = []
+        target_windows_list = []
+        
+        for y, t, X in zip(y_s_normal, t_s_normal, X_s_normal):
+            self.window_slider.new_slide(y=y, t=t, X=X)
+
+            predictor_windows, target_windows = self.window_slider.get_all_windows()
+            predictor_windows_list.append(predictor_windows)
+            target_windows_list.append(target_windows)
+
+        # Combine all windows from all sequences
+        predictor_windows_combined = np.vstack(predictor_windows_list)
+        target_windows_combined = np.vstack(target_windows_list)
+
         if self.regressor.fittable:
 
             if self.regressor.fit_method == "online":
@@ -63,27 +92,7 @@ class StackDetector:
             elif self.regressor.fit_method != "batch":
                 raise ValueError(f"Unknown regressor fit_method: {self.regressor.fit_method}. Supported methods are 'batch' and 'online' (only through .online_fit()).")
 
-            # Only give regressor access to normal data (before changepoint)
-            # This requires that if no changepoints are present, y in y_s is the length of the data
-            if cps_s is not None:
-                y_s_normal = [y[:cp] for y, cp in zip(y_s, cps_s)]
-                if t_s is not None:
-                    t_s_normal = [t[:cp] for t, cp in zip(t_s, cps_s)]
-                else:
-                    t_s_normal = None
-                if X_s is None:
-                    X_s_normal = [X[:cp] for X, cp in zip(X_s, cps_s)]
-                else:
-                    X_s_normal = None
-            else: 
-                raise UserWarning("cps_s is None, assuming all data is normal for regressor fitting.")
-            
-                y_s_normal, t_s_normal, X_s_normal = y_s, t_s, X_s
-
-            # Apply window slider to normal data to get numpy arrays for fitting somewhat fast
-
-
-            #self.regressor.fit(y_combined=, t_combined=, y_s=)
+            self.regressor.fit(X=predictor_windows_combined, y=target_windows_combined)
 
         if self.thresholder.fittable:
 
@@ -91,7 +100,7 @@ class StackDetector:
                 raise ValueError("y_s cannot be None if the thresholder is fittable.")
             
             # Get regressor scores on all data
-            regressor_predictions = self._get_regressor_predictions(X_s)
+            regressor_predictions = self._get_regressor_predictions(y_s_normal, t_s_normal, X_s_normal) #TODO: how do we change this to nicely use the correct inputs?
 
             scores = self.scorer.score(y_s, regressor_predictions)
              
@@ -99,13 +108,13 @@ class StackDetector:
 
         self.is_fitted = True
 
-    #Possible future feature: use y_s for early stopping, but this would also need model support
+    #Possible future feature: use cps_s for early stopping, but this would also need model support
     def predict(self, y_s, t_s=None, X_s=None, cps_s=None):
 
         if (self.thresholder.fittable or self.regressor.fittable) and not self.is_fitted:
             raise ValueError("This StackDetector is fittable but has not been fitted yet. Please call fit() before predict().")
 
-        regressor_predictions = self._get_regressor_predictions(X_s)
+        regressor_predictions = self._get_regressor_predictions(X_s) #TODO: how do we change this to nicely use the correct inputs?
         scores = self.scorer.score(X_s, regressor_predictions)
         predictions = self.thresholder.threshold(scores)
 
@@ -118,7 +127,10 @@ class StackDetector:
         return self.predict(X_s, y_s)
 
     #If we want early stopping, we need a mirror of this function which has the functionality to use y_s and self.thresholder to determine whether the change point has been detected yet
-    def _get_regressor_predictions(self, X_s, y_s=None):
+    def _get_regressor_predictions(self,  y_s, t_s=None, X_s=None, cps_s=None):
+
+        if cps_s is not None:
+            raise NotImplementedError("Using cps_s for early stopping during prediction is not yet implemented.")
 
         regressor_predictions = []
 

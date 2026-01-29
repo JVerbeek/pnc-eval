@@ -34,7 +34,7 @@ def main():
     parser.add_argument('--generator-hyperparameters', default=None, help='YAML file of keyword arguments for the generator function (default: None, use empty dict)') 
     parser.add_argument('--regressor', required=True, help='Dotted path to the regressor class')
     parser.add_argument('--regressor-hyperparameters', default=None, help='YAML file of keyword arguments for the regressor class (default: None, use empty dict)')
-    parser.add_argument('--window-slider', default='src.models.window_sliders.window_slide.WindowSlider', help='Dotted path to the window slider class (default: WindowSlider)')
+    parser.add_argument('--window-slider', default='src.models.window_sliders.window_slide.UnivariateWindowSlider', help='Dotted path to the window slider class (default: WindowSlider)')
     parser.add_argument('--window-slider-kwargs', default=None, help='YAML file of keyword arguments for the window slider class (default: None, use empty dict)')
     parser.add_argument('--thresholder', default='src.models.thresholders.wald_constant_thresholder.WaldConstantThresholder', help='Dotted path to the thresholder class (default: WaldConstantThresholder)')
     parser.add_argument('--thresholder-kwargs', default=None, help='YAML file of keyword arguments for the thresholder class (default: None, use empty dict)')

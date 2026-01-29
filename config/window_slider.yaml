@@ -1,2 +1,3 @@
-window_size: 20
+predictor_window_size: 20
+target_window_size: 2
 skip_length: 2
