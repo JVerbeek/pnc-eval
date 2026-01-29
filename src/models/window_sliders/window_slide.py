@@ -63,7 +63,8 @@ class UnivariateWindowSlider(Slider):
         
         super().new_slide(y)
 
-    def next_window(self):
+    def next_window(self, return_indices=False):
+        # return indices returns predictor window indices
         if self.y is None:
             raise ValueError("No data provided. Please call new_slide(y) before next_window().")
 
@@ -74,7 +75,12 @@ class UnivariateWindowSlider(Slider):
             target_window = self.y[self.current_position + self.predictor_window_size:self.current_position + self.predictor_window_size + self.target_window_size]
             self.current_position += self.skip_length
 
-            yield predictor_window, target_window
+            if return_indices:
+                predictor_window_start_index = self.current_position - self.skip_length
+                predictor_window_end_index = predictor_window_start_index + self.predictor_window_size
+                yield (predictor_window, target_window), (predictor_window_start_index, predictor_window_end_index)
+            else:
+                yield predictor_window, target_window
 
 
 

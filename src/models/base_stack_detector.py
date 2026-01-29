@@ -1,19 +1,23 @@
 import numpy as np
 import abc
 
+from src.models.window_sliders.window_slide import Slider
+
 from src.models.prediction_combiners.prediction_combiners import select_first, select_last, select_mean
 
 class StackDetector:
-    def __init__(self, window_slider, regressor, scorer, thresholder, prediction_window_size=1, prediction_selection_strategy='first'):
+    def __init__(self, window_slider, regressor, scorer, thresholder, prediction_selection_strategy='first'):
         self.window_slider = window_slider
         self.regressor = regressor
         self.scorer = scorer
         self.thresholder = thresholder
         self.prediction_selection_strategy = prediction_selection_strategy
 
+        self.prediction_window_size = self.window_slider.prediction_window_size
+
         # Input checks:
         # prediction_window_size must be positive integer
-        if not (isinstance(prediction_window_size, int) and prediction_window_size > 0):
+        if not (isinstance(self.prediction_window_size, int) and self.prediction_window_size > 0):
             raise ValueError("prediction_window_size must be a positive integer.")
         
         # prediction_selection_strategy must be one of 'first', 'last', 'mean'
@@ -33,7 +37,7 @@ class StackDetector:
         # Prediction window must be at least as large as the window sliders skip length (if it has any), otherwise there is not a prediction for each point
         # For future: consider allowing for sparse predictions when subsampling
         if hasattr(window_slider, 'skip_length'):
-            if prediction_window_size < window_slider.skip_length:
+            if self.prediction_window_size < window_slider.skip_length:
                 raise ValueError("prediction_window_size must be at least as large as the window_slider's skip_length.")
 
         # Determine if the StackDetector is fittable
@@ -111,10 +115,14 @@ class StackDetector:
     #Possible future feature: use cps_s for early stopping, but this would also need model support
     def predict(self, y_s, t_s=None, X_s=None, cps_s=None):
 
+        #early stopping not yet implemented
+        if cps_s is not None:
+            raise NotImplementedError("Using cps_s for early stopping during prediction is not yet implemented.")
+
         if (self.thresholder.fittable or self.regressor.fittable) and not self.is_fitted:
             raise ValueError("This StackDetector is fittable but has not been fitted yet. Please call fit() before predict().")
 
-        regressor_predictions = self._get_regressor_predictions(X_s) #TODO: how do we change this to nicely use the correct inputs?
+        regressor_predictions = self._get_regressor_predictions(y_s, t_s, X_s, cps_s) #TODO: how do we change this to nicely use the correct inputs?
         scores = self.scorer.score(X_s, regressor_predictions)
         predictions = self.thresholder.threshold(scores)
 
@@ -129,26 +137,29 @@ class StackDetector:
     #If we want early stopping, we need a mirror of this function which has the functionality to use y_s and self.thresholder to determine whether the change point has been detected yet
     def _get_regressor_predictions(self,  y_s, t_s=None, X_s=None, cps_s=None):
 
-        if cps_s is not None:
-            raise NotImplementedError("Using cps_s for early stopping during prediction is not yet implemented.")
-
         regressor_predictions = []
 
-        for X in X_s:
-            self.window_slider.new_slide(X)
-            window_predictions = []
-            prediction_window_indices = []
+        if t_s is None:
+            t_s = [None] * len(y_s)
+        if X_s is None:
+            X_s = [None] * len(y_s)
 
-            for window in self.window_slider.next_window():
-                window_pred = self.regressor.predict(window, self.prediction_window_size)
+        for y, t, X in zip(y_s, t_s, X_s):
+            self.window_slider.new_slide(y, t, X)
+            window_predictions = []
+            predicted_window_indices = []
+            #TODO: check below to see if it is correct now that next_window yields predictor/target pairs
+            for (prediction_window, target_window), (prediction_window_start_index, prediction_window_end_index) in self.window_slider.next_window(return_indices=True):
+                window_pred = self.regressor.predict(prediction_window, self.prediction_window_size)
                 window_predictions.append(window_pred)
-                _, window_end_index = self.window_slider.get_window_indices()
-                prediction_window_indices.append((window_end_index, window_end_index+self.prediction_window_size))
+                
+                predicted_window_indices.append((prediction_window_end_index, prediction_window_end_index+self.prediction_window_size))
         
             # Combine predictions using specified strategy:
-            combined_predictions = self.prediction_selector(window_predictions, prediction_window_indices)
-            skip = self.window_slider.get_window_indices()[1] - self.window_slider.get_window_indices()[0]
-            combined_predictions = combined_predictions[skip+self.prediction_window_size:]
+            #TODO, fix this to work, and write tests
+            combined_predictions = self.prediction_selector(window_predictions, predicted_window_indices)
+
+            
             regressor_predictions.append(combined_predictions)
 
         return regressor_predictions
