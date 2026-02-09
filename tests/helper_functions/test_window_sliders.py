@@ -1,3 +1,8 @@
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
 from src.models.window_sliders.window_slide import UnivariateWindowSlider
 
 import numpy as np
@@ -80,3 +85,73 @@ def test_2d_input():
     assert len(windows) == expected_num_windows
 
 
+def test_insufficient_data():
+    data = np.arange(5)  # Sample data from 0 to 4
+    slider = UnivariateWindowSlider(predictor_window_size=4, skip_length=1, target_window_size=2)
+    slider.new_slide(data)
+
+    windows = list(slider)
+    assert len(windows) == 0
+
+def test_no_data():
+    slider = UnivariateWindowSlider(predictor_window_size=4, skip_length=1, target_window_size=2)
+    try:
+        slider.get_all_windows()
+        assert False, "Expected ValueError when calling get_all_windows() without new_slide()"
+    except ValueError as e:
+        assert str(e) == "No data provided. Please call new_slide(y) before get_all_windows()."
+
+def test_next_window_no_data():
+    slider = UnivariateWindowSlider(predictor_window_size=4, skip_length=1, target_window_size=2)
+    try:
+        slider.next_window()
+        assert False, "Expected ValueError when calling next_window() without new_slide()"
+    except ValueError as e:
+        assert str(e) == "No data provided. Please call new_slide(y) before next_window()."
+
+def test_non_univariate_input():
+    slider = UnivariateWindowSlider(predictor_window_size=4, skip_length=1, target_window_size=2)
+    data = np.array([[1, 2], [3, 4], [5, 6]])
+    try:
+        slider.new_slide(data)
+        assert False, "Expected ValueError when calling new_slide() with non-univariate input"
+    except ValueError as e:
+        assert str(e) == "Input data y must be univariate (1D array)."
+
+def test_skip_length_larger_than_prediction_window_size():
+    try:
+        slider = UnivariateWindowSlider(predictor_window_size=4, skip_length=5, target_window_size=2)
+        assert slider.skip_length == 5
+    except ValueError as e:
+        assert str(e) == "prediction_window_size must be at least as large as the window_slider's skip_length."
+
+def test_return_indices():
+    data = np.arange(20)  # Sample data from 0 to 19
+    slider = UnivariateWindowSlider(predictor_window_size=5, skip_length=3, target_window_size=2)
+    slider.new_slide(data)
+
+    expected_indices = [
+        (0, 5),
+        (3, 8),
+        (6, 11),
+        (9, 14),
+        (12, 17)
+    ]
+
+    for i, ((_, _), indices) in enumerate(slider.next_window(return_indices=True)):
+        assert indices == expected_indices[i]
+
+#temporary test calls to run script manually:
+
+# if __name__ == "__main__":
+#     test_univariate_window_slider_initialization()
+#     test_univariate_window_slider_window_extraction()
+#     test_univariate_window_slider_get_all_windows()
+#     test_2d_input()
+#     test_insufficient_data()
+#     test_no_data()
+#     test_next_window_no_data()
+#     test_non_univariate_input()
+#     test_skip_length_larger_than_prediction_window_size()
+#     test_return_indices()
+#     print("All tests passed!")
