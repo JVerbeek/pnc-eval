@@ -146,18 +146,21 @@ class StackDetector:
 
         for y, t, X in zip(y_s, t_s, X_s):
             self.window_slider.new_slide(y, t, X)
-            window_predictions = []
-            predicted_window_indices = []
+
+            target_window_predictions = []
+            target_window_indices = []
+
             #TODO: check below to see if it is correct now that next_window yields predictor/target pairs
-            for (prediction_window, target_window), (prediction_window_start_index, prediction_window_end_index) in self.window_slider.next_window(return_indices=True):
-                window_pred = self.regressor.predict(prediction_window, self.prediction_window_size)
-                window_predictions.append(window_pred)
-                
-                predicted_window_indices.append((prediction_window_end_index, prediction_window_end_index+self.prediction_window_size))
+            for (predictor_window, _), (predictor_window_start_index, predictor_window_end_index) in self.window_slider.next_window(return_indices=True):
+
+                target_window_pred = self.regressor.predict(predictor_window, self.prediction_window_size)
+                target_window_predictions.append(target_window_pred)
+
+                target_window_indices.append((predictor_window_end_index, predictor_window_end_index+self.prediction_window_size)) #TODO: check this is correct, and write tests
         
             # Combine predictions using specified strategy:
             #TODO, fix this to work, and write tests
-            combined_predictions = self.prediction_selector(window_predictions, predicted_window_indices)
+            combined_predictions = self.prediction_selector(target_window_predictions, target_window_indices)
 
             
             regressor_predictions.append(combined_predictions)
