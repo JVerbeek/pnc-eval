@@ -1,0 +1,44 @@
+properties:
+  amplitude:
+    dist: uniform
+    dist_params:
+    - 1
+    - 50
+    change: True
+  frequency:
+    dist: uniform
+    dist_params:
+    - 10
+    - 50
+    change: False
+
+  global_noise:
+    dist: norm
+    dist_params:
+    - 0
+    - 1
+    change: False
+  variance:
+    dist: norm
+    dist_params:
+    - 0
+    - 1
+    change: False
+  mean:
+    dist: uniform
+    dist_params:
+    - 5
+    - 10
+    change: False
+  changepoint:
+    stepped: true
+    location: 354
+    order: 0
+
+data_config:
+  oscillating: true
+  n_datapoints: 500
+  n_datasets: 10
+  time_range:
+  - 0
+  - 1

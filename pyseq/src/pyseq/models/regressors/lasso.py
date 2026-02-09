@@ -1,7 +1,6 @@
 from sklearn.linear_model import Lasso
 from .base_regression_models import BaseRegressionModel
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 class LassoModel(BaseRegressionModel):

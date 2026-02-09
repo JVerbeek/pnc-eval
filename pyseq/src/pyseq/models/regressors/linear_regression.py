@@ -1,7 +1,6 @@
 from sklearn.linear_model import LinearRegression
 from .base_regression_models import BaseRegressionModel
 import numpy as np
-import matplotlib.pyplot as plt
 
 class LinearRegressionModel(BaseRegressionModel):
     def __init__(self):

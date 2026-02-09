@@ -2,7 +2,6 @@ import sys
 sys.path.append("/home/janneke/repos/pnc-eval/")
 from src.models.regressors.base_regression_models import BaseRegressionModel
 import numpy as np
-import matplotlib.pyplot as plt
 from gpflow.models import GPR
 from gpflow.kernels import RBF
 from gpflow.optimizers import Scipy
