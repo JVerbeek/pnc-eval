@@ -141,17 +141,39 @@ def test_return_indices():
     for i, ((_, _), indices) in enumerate(slider.next_window(return_indices=True)):
         assert indices == expected_indices[i]
 
+def test_t_input():
+    data = np.arange(20)  # Sample data from 0 to 19
+    time = np.arange(20) * 0.5  # Time component, should be ignored
+    slider = UnivariateWindowSlider(predictor_window_size=5, skip_length=3, target_window_size=2)
+    try:
+        slider.new_slide(data, t=time)
+        assert False, "Expected UserWarning when calling new_slide() with time input"
+    except UserWarning as e:
+        assert str(e) == "Time component t is provided but will be ignored for UnivariateWindowSlider."
+
+def test_X_input():
+    data = np.arange(20)  # Sample data from 0 to 19
+    exogenous_predictors = np.arange(20).reshape(-1, 1)  # Predictor component, should be ignored
+    slider = UnivariateWindowSlider(predictor_window_size=5, skip_length=3, target_window_size=2)
+    try:
+        slider.new_slide(data, X=exogenous_predictors)
+        assert False, "Expected UserWarning when calling new_slide() with predictor input"
+    except UserWarning as e:
+        assert str(e) == "Predictor component X is provided but will be ignored for UnivariateWindowSlider."
+
 #temporary test calls to run script manually:
 
-# if __name__ == "__main__":
-#     test_univariate_window_slider_initialization()
-#     test_univariate_window_slider_window_extraction()
-#     test_univariate_window_slider_get_all_windows()
-#     test_2d_input()
-#     test_insufficient_data()
-#     test_no_data()
-#     test_next_window_no_data()
-#     test_non_univariate_input()
-#     test_skip_length_larger_than_prediction_window_size()
-#     test_return_indices()
-#     print("All tests passed!")
+if __name__ == "__main__":
+    test_univariate_window_slider_initialization()
+    test_univariate_window_slider_window_extraction()
+    test_univariate_window_slider_get_all_windows()
+    test_2d_input()
+    test_insufficient_data()
+    test_no_data()
+    test_next_window_no_data()
+    test_non_univariate_input()
+    test_skip_length_larger_than_prediction_window_size()
+    test_return_indices()
+    test_t_input()
+    test_X_input()
+    print("All tests passed!")

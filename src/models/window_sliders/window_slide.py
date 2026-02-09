@@ -49,12 +49,19 @@ class Slider(abc.ABC):
         return predictor_windows, target_windows
 
 class UnivariateWindowSlider(Slider):
+    # Does not use time component
     def __init__(self, predictor_window_size, skip_length=1, target_window_size=1):
         super().__init__(predictor_window_size, skip_length, target_window_size)
         self.current_position = 0
         self.y = None
 
-    def new_slide(self, y):
+    def new_slide(self, y, t=None, X=None):
+        # check that t and X are actually None, otherwise, raise warning that they will be ignored
+        if t is not None:
+            raise UserWarning("Time component t is provided but will be ignored for UnivariateWindowSlider.")
+        if X is not None:
+            raise UserWarning("Predictor component X is provided but will be ignored for UnivariateWindowSlider.")
+        
         #make sure y is 1D, drop dimensions if needed
         y = np.squeeze(y)
         if y.ndim != 1:

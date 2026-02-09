@@ -70,15 +70,15 @@ def main():
 
     sd = StackDetector(window_slider=window_slider, regressor=regressor, 
                        thresholder=thresholder, 
-                       scorer=scorer, prediction_window_size=10)
+                       scorer=scorer)
 
     # Training (only if model is fittable)
     if regressor.fittable:
         print("Model is fittable, training...")
         # If we want to add preprocessing steps, add them to this function call
-        t_train, y_train, cps = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="train")
+        _, y_train_s, cps_s = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="train")
 
-        sd.fit(y_train, t_train)
+        sd.fit(y_train_s, cps_s=cps_s)
 
 
     # Validation for hyperparameter selection (not implemented yet)
