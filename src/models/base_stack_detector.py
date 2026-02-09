@@ -113,7 +113,7 @@ class StackDetector:
         self.is_fitted = True
 
     #Possible future feature: use cps_s for early stopping, but this would also need model support
-    def predict(self, y_s, t_s=None, X_s=None, cps_s=None):
+    def predict(self, y_s, t_s=None, X_s=None, cps_s=None, return_scores=False, return_regressor_predictions=False):
 
         #early stopping not yet implemented
         if cps_s is not None:
@@ -122,11 +122,19 @@ class StackDetector:
         if (self.thresholder.fittable or self.regressor.fittable) and not self.is_fitted:
             raise ValueError("This StackDetector is fittable but has not been fitted yet. Please call fit() before predict().")
 
-        regressor_predictions = self._get_regressor_predictions(y_s, t_s, X_s, cps_s) #TODO: how do we change this to nicely use the correct inputs?
-        scores = self.scorer.score(X_s, regressor_predictions)
+        regressor_predictions = self._get_regressor_predictions(y_s, t_s, X_s, cps_s) 
+        scores = self.scorer.score(y_s, regressor_predictions)
         predictions = self.thresholder.threshold(scores)
 
-        return predictions
+        if return_scores and return_regressor_predictions:
+            return predictions, scores, regressor_predictions
+        elif return_scores:
+            return predictions, scores
+        elif return_regressor_predictions:
+            return predictions, regressor_predictions
+        else:
+            return predictions
+
 
     def fit_predict(self, X_s, y_s):
 
