@@ -1,2 +1,4 @@
 *.pyc
 *.npz
+pyseq/src/PySeq.egg-info/PKG-INFO
+pyseq/src/PySeq.egg-info/SOURCES.txt
