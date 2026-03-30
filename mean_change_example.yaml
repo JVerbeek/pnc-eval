@@ -1,4 +1,0 @@
-n_datasets: 100
-n_datapoints: 200
-i_changepoint: 50
-noise_scale: 0.1
