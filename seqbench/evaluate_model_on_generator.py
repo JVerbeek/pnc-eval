@@ -7,9 +7,9 @@ import sys
 import numpy as np
 
 
-from src.models.base_stack_detector import StackDetector
+from pyseq.models.base_stack_detector import StackDetector
 
-from src.data_generators.generate_dataset import generate_dataset
+from run_dataset_generation import make_dataset
 
 def import_object_from_string(dotted_path):
     """Import an object (function, class, etc.) from a dotted module path like 'module.submodule.func'."""
@@ -30,7 +30,7 @@ def handle_open_file(filename):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--generator', default="src.data_generators.generation_script.generate_datasets", required=True, help='Dotted path to the generator function')
+    parser.add_argument('--generator', default="pyseq_data.src.pyseq_data.dataset_generation_classes.generate_multiple_datasets", required=True, help='Dotted path to the generator function')
     parser.add_argument('--generator-hyperparameters', default=None, help='YAML file of keyword arguments for the generator function (default: None, use empty dict)') 
     parser.add_argument('--regressor', required=True, help='Dotted path to the regressor class')
     parser.add_argument('--regressor-hyperparameters', default=None, help='YAML file of keyword arguments for the regressor class (default: None, use empty dict)')
@@ -76,7 +76,7 @@ def main():
     if regressor.fittable:
         print("Model is fittable, training...")
         # If we want to add preprocessing steps, add them to this function call
-        _, y_train_s, cps_s = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="train")
+        _, y_train_s, cps_s = make_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="train")
 
         sd.fit(y_train_s, cps_s=cps_s)
 
@@ -86,7 +86,7 @@ def main():
 
     # Testing
 
-    t_test_s, y_test_s, cps_s = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="test")
+    t_test_s, y_test_s, cps_s = make_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="test")
 
     print(regressor)
     test_pred_s, scores_s, regressor_pred_s = sd.predict(y_test_s, return_scores=True, return_regressor_predictions=True)
@@ -121,13 +121,13 @@ def main():
 if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
-        "--generator", "src.data_generators.generation_script.generate_datasets",
-        "--generator-hyperparameters", "config/generators/frequency-gradual-osc.yaml",
+        "--generator", "pyseq_data.src.data_generators.generation_script.generate_datasets",
+        "--generator-hyperparameters", "pyseq_data/src/pyseq_data/example_config.yaml",
         #"--regressor", "src.models.regressors.linear_regression.LinearRegressionModel",
         "--regressor", "src.models.regressors.random_forest_regression.MultiOutputRandomForest",
         #"--regressor-hyperparameters", "path/to/model_hyperparams.yaml",
-        "--window-slider-kwargs", "config/window_slider.yaml",
-        "--thresholder-kwargs", "config/wald-constant-thresholder.yaml",
+        "--window-slider-kwargs", "seqbench/config/window_slider.yaml",
+        "--thresholder-kwargs", "seqbench/config/wald-constant-thresholder.yaml",
         "--plot-test-results"
     ]
     main()
