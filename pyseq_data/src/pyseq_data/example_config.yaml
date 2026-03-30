@@ -4,7 +4,7 @@ properties:
     dist_params:
     - 1
     - 50
-    change: True
+    change: False
   frequency:
     dist: uniform
     dist_params:
@@ -29,7 +29,7 @@ properties:
     dist_params:
     - 5
     - 10
-    change: False
+    change: True
   changepoint:
     stepped: true
     location: 354

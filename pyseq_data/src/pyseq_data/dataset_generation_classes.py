@@ -40,8 +40,8 @@ def parse_properties(cfg: dict):
         property_dict[k] = Property(value[0])
         if v["change"]:  # If this property should have a change, set some variables. 
             change_type = k
-            after_change = utils.sample_from_distribution(dist, v["dist_params"])  # Sample a second value. It is highly unlikely, but possible, that you sample the same value twice.
-
+            after_change = utils.sample_from_distribution(dist, v["dist_params"])
+             
     # Change the property that should exhibit a change to a changepoint property.
     changepoint = get_changepoint(cfg["changepoint"], before_change=property_dict[change_type], after_change=after_change)
     property_dict[change_type] = changepoint

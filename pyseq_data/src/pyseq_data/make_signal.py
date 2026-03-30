@@ -20,9 +20,16 @@ class DataType:
 
     def __post_init__(self):
         for fname, ftype in self.__annotations__.items():
+            print(fname, ftype)
             f = getattr(self, fname)
             if isinstance(f, Property):
                 f.value = f.asarray(self.length)
+
+    def apply_change(self):
+        for fname, ftype in self.__annotations__.items():
+            if isinstance(ftype, ChangeDecorator):
+                f = getattr(self, fname)
+                f.value = f.get_value()
 
     def update(self, properties: dict):
         for fname, ftype in self.__annotations__.items():
@@ -35,19 +42,13 @@ class DataType:
 class ChangeDecorator():
     def __init__(self, location=0, value=Property(0), after_change=1, length=100):
         self.location = location 
-        self.value = value.value
+        self.before_change = np.array([value] * length)
         self.after_change = after_change
         self.length = length
 
-    def __post_init__(self):
-        for fname, ftype in self.__annotations__.items():
-            f = getattr(self, fname)
-            if isinstance(f, Property):
-                f.value = np.array([f.value] * self.length)
-
     def get_value(self):
         f = self.get_fn() 
-        return f(np.ones(len(self.value))) * value
+        return print(f)
         
 @dataclass
 class PolyChange(ChangeDecorator):
@@ -56,7 +57,7 @@ class PolyChange(ChangeDecorator):
         self.order = order
 
     def get_fn(self):
-        return lambda t: np.where(t < self.location, self.after_change, (self.after_change + t ** self.exponent *(self.before_change-self.after_change)) / (max(t) - min(t)))
+        return lambda t: np.where(t < self.location, self.after_change, (self.after_change + t ** self.order *(self.before_change-self.after_change)) / (max(t) - min(t)))
 
 @dataclass
 class SteppedChange(ChangeDecorator):
@@ -84,6 +85,9 @@ class OscillationData(DataType):
     frequency: Property
 
     def get_data(self):
+        for prop in vars(self):
+            if isinstance(prop, ChangeDecorator):
+                setattr(self, prop, prop.get_value())
         t = np.linspace(self.time_start, self.time_stop, self.length)
         y = np.random.normal(self.mean.value, self.variance.value, self.length)
         y += self.amplitude.value * np.cos(self.frequency.value * 2 * np.pi * t)
@@ -100,17 +104,28 @@ class ComplicatedCompositeFunction(DataType):
         ## Define some complicated function of t here
         pass
 
-# osc = OscillationData(
-#     mean=Property(5), 
-#     variance=Property(1), 
-#     amplitude=PolyChange(
-#         order=1, 
-#         location=50, 
-#         value=Property(5), 
-#         after_change=3,
-#         length=300), 
-#     frequency=Property(5), 
-#     time_start=0, 
-#     time_stop=1,
-#     length=300) 
+osc = OscillationData(
+    mean=Property(5), 
+    variance=Property(1), 
+    amplitude=PolyChange(
+        order=1, 
+        location=50, 
+        before_change=Property(5), 
+        after_change=100,
+        length=300), 
+    frequency=Property(5), 
+    time_start=0, 
+    time_stop=1,
+    length=300) 
+print(osc.amplitude)
+change = PolyChange(
+        order=1, 
+        location=50, 
+        before_change=Property(5), 
+        after_change=100,
+        length=300)
+print(change.get_value())
+osc.apply_change()   # todo - polychange.value should be an array or the result of get_fn
+plt.plot(osc.get_data())  
+plt.show()
 
