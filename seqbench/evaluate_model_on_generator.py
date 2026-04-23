@@ -48,7 +48,6 @@ def main():
     # If the files are not provided, use empty dicts as kwargs
     # Load regressor, window-slider, and thresholder hyperparameters
     # TODO: add error handling for YAML loading
-
     regressor_kwargs = handle_open_file(args.regressor_hyperparameters)
     window_slider_kwargs = handle_open_file(args.window_slider_kwargs)
     thresholder_kwargs = handle_open_file(args.thresholder_kwargs)
@@ -77,20 +76,15 @@ def main():
         print("Model is fittable, training...")
         # If we want to add preprocessing steps, add them to this function call
         X_train, y_train, cps = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="train")
-
         sd.fit(X_train, y_train)
 
 
     # Validation for hyperparameter selection (not implemented yet)
     #TODO: Implement hyperparameter selection
-
     # Testing
-
     X_test, y_test, cps = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="test")
 
-
     pred_test = sd.predict(X_test, y_test)
-
 
     # optional test plotting:
     if args.plot_test_results:

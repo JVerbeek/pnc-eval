@@ -5,6 +5,7 @@ properties:
     - 1
     - 50
     change: False
+
   frequency:
     dist: uniform
     dist_params:
@@ -12,31 +13,35 @@ properties:
     - 50
     change: False
 
-  global_noise:
-    dist: norm
-    dist_params:
-    - 0
-    - 1
-    change: False
   variance:
     dist: norm
     dist_params:
     - 0
     - 1
     change: False
+
   mean:
     dist: uniform
     dist_params:
     - 5
     - 10
     change: True
-  changepoint:
-    stepped: true
-    location: 354
-    order: 0
+# 
+  # global_noise:
+  #   dist: norm
+  #   dist_params:
+  #   - 0
+  #   - 1
+  #   change: False
+# Properties of the changepoint
+changepoint:
+  stepped: True
+  location: 150
+  order: 0
 
+# Data config 
 data_config:
-  oscillating: true
+  oscillating: False
   n_datapoints: 500
   n_datasets: 10
   time_range:

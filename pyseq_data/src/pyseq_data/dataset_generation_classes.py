@@ -41,7 +41,7 @@ def parse_properties(cfg: dict):
         if v["change"]:  # If this property should have a change, set some variables. 
             change_type = k
             after_change = utils.sample_from_distribution(dist, v["dist_params"])
-             
+
     # Change the property that should exhibit a change to a changepoint property.
     changepoint = get_changepoint(cfg["changepoint"], before_change=property_dict[change_type], after_change=after_change)
     property_dict[change_type] = changepoint
@@ -51,19 +51,19 @@ def make_dataclass(config):
     dataclass = parse_data_config(config["data_config"])
     properties = parse_properties(config["properties"])
     dataclass.update(properties)
-    time_range = config["data_config"]["time_range"]
+    time_range = confdataclass_configig["data_config"]["time_range"]
     x = np.linspace(time_range[0], time_range[1], config["data_config"]["n_datapoints"])
     return x, dataclass
 
-if __name__=="__main__":
-    with open("/home/janneke/repos/pnc-eval/pyseq_data/src/pyseq_data/example_config.yaml") as f:
-        dataclass_config = yaml.safe_load(f)
+def generate_multiple_datasets(dataclass_config):
     ts, ys, cps = [], [], []
     for i in range(dataclass_config["data_config"]["n_datasets"]):
         t, dataclass = make_dataclass(dataclass_config)
         y = dataclass.get_data()
         ts.append(t), ys.append(y), cps.append(dataclass_config["properties"]["changepoint"]["location"])
+    return ts, ys, cps  
 
-    plt.plot(ts[0], ys[0])
-    plt.axvline(ts[0][cps[0]])
-    plt.show()
+if __name__=="__main__":
+    cfg = yaml.safe_load("/home/janneke/repos/pnc-eval/pyseq_data/src/pyseq_data/example_config.yaml")
+    ts, ys, cps = generate_multiple_datasets(dataset_cfg)
+    print(ts, ys, cps)

@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: pyseq_data
+Version: 0.0.1
+Summary: Pyseq Data
+Author-email: JVerbeek <janneke.verbeek@ru.nl>
+License-Expression: MIT
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENCE
+Dynamic: license-file

@@ -1,0 +1,15 @@
+[project]
+name = "pyseq_data"
+version = "0.0.1"
+authors = [
+  { name="JVerbeek", email="janneke.verbeek@ru.nl" },
+]
+description = "Pyseq Data"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
