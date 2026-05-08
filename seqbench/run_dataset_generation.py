@@ -29,10 +29,11 @@ def get_generator_object_from_config(config="pyseq_data/src/pyseq_data/example_c
 
 
     for name, params in properties.items():
-        value = psdu.sample_from_distribution(psdu.get_distribution(params["dist"]), params["dist_params"])
-        value = psdf.Property(value)
+        dist = psdu.get_distribution(params["dist"], params["dist_params"])
+        sample = dist.rvs(1)
+        value = psdf.Property(sample, dist)
         if params["change"]:
-            after_change_value = psdu.sample_from_distribution(psdu.get_distribution(params["dist"]), params["dist_params"])
+            after_change_value = dist.rvs(1)
             change_dict = { "location": changepoint["location"],
                             "before_change": value,
                             "after_change": after_change_value,
@@ -47,7 +48,7 @@ def get_generator_object_from_config(config="pyseq_data/src/pyseq_data/example_c
         kwargs[name] = result
             
     if data_config["oscillating"]:
-        ds = psdf.OscillationData(**kwargs)
+        ds = psdf.OscillationData(**kwargs, location=changepoint["location"])
     else: 
         kwargs.pop("frequency")
         kwargs.pop("amplitude")
@@ -79,13 +80,12 @@ def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
     cps_file = os.path.join(generated_data_folder, f"cps_{set_name}.npz")
     params_file = os.path.join(generated_data_folder, f"params_{set_name}.json")
 
-    if not os.path.exists(X_file) or not os.path.exists(y_file) or not os.path.exists(cps_file) or not os.path.exists(params_file):
+    if not os.path.exists(t_file) or not os.path.exists(y_file) or not os.path.exists(cps_file) or not os.path.exists(params_file):
         generator = get_generator_object_from_config(generator_hyperparameters)
         
-        X, y, cps = generator.get_data(10)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
-        print(X.shape, y.shape, cps.shape)
+        t, y, cps = generator.get_data(3)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
         # Save the generated data with explicit keys
-        np.savez_compressed(X_file, X=X) #check if this works fo    def get_data(n_datasets=1):
+        np.savez_compressed(t_file, t=t) #check if this works fo    def get_data(n_datasets=1):
         np.savez_compressed(y_file, y=y)
         np.savez_compressed(cps_file, cps=cps)
         # Save params as JSON (assume params is a plain dict)
@@ -104,3 +104,7 @@ def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
     y = [(y_instance - y_instance.mean())/y_instance.std() for y_instance in y]
 
     return t, y, cps#, params
+
+
+if __name__ == "__main__":
+    print(get_generator_object_from_config().mean.get_value())
