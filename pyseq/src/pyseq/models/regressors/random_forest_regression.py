@@ -1,6 +1,6 @@
-from src.models.regressors.base_regression_models import BatchFittableRegressionModel
+from ..regressors.base_regression_models import BatchFittableRegressionModel
 
-from src.helper_functions.data_transformation import transform_for_autoregressive_fit
+from pyseq.helper_functions.data_transformation import transform_for_autoregressive_fit
 
 from sklearn.ensemble import RandomForestRegressor
 import numpy as np

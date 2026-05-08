@@ -8,13 +8,19 @@ import pyseq
 import pyseq_data.utilities as psdu
 import pyseq_data.make_signal as psdf
 
-def get_generator_object_from_config(config="pyseq_data/src/pyseq_data/example_config.yaml"):
-    with open(config) as f:
+
+def get_generator_kwargs(fname, kwargs_only=False):
+    with open(fname) as f:
         hyperparams = yaml.safe_load(f)
         changepoint = hyperparams["changepoint"]
         properties = hyperparams["properties"]
         data_config = hyperparams["data_config"]
+    if kwargs_only:
+        return hyperparams
+    return changepoint, properties, data_config, hyperparams
 
+def get_generator_object_from_config(config="pyseq_data/src/pyseq_data/example_config.yaml"):
+    changepoint, properties, data_config, hyperparams = get_generator_kwargs(config)
     kwargs = {}
     
     n_datapoints = data_config["n_datapoints"]
@@ -45,22 +51,23 @@ def get_generator_object_from_config(config="pyseq_data/src/pyseq_data/example_c
     else: 
         kwargs.pop("frequency")
         kwargs.pop("amplitude")
-        ds = psdf.ConstantData(**kwargs) 
+        ds = psdf.ConstantData(**kwargs, location=changepoint["location"]) 
     return ds
 
 
-def make_dataset(generator_kwargs, generator_fn, generator_hyperparameters, generator_name, set_name="train"):
+def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
     # Check if data has been generated before:
 
     # Convert hyperparameter kwargs dict to a folder name
     if generator_hyperparameters:
         # Create a concise, readable string from generator_kwargs for folder naming
-        # Use a hash of the kwargs string for a robust folder 
+        # Use a hash of the kwargs string for a robust folder
+        generator_kwargs = get_generator_kwargs(generator_hyperparameters)
         generator_kwargs_str = json.dumps(generator_kwargs, sort_keys=True)
         hash_object = hashlib.sha256(generator_kwargs_str.encode())
         generator_kwargs_str = hash_object.hexdigest()[:32] #technically not unique, but hopefully fine
 
-    else: # no hyperparameters provided, e.g. args.generator_hyperparameters is None
+    else: # no hyperparameters provided, eenerator_kwargs.g. args.generator_hyperparameters is None
         generator_kwargs_str = "default"
 
     generated_data_folder = os.path.join("generated_data", generator_name.replace('.', '_'), generator_kwargs_str)
@@ -72,10 +79,11 @@ def make_dataset(generator_kwargs, generator_fn, generator_hyperparameters, gene
     cps_file = os.path.join(generated_data_folder, f"cps_{set_name}.npz")
     params_file = os.path.join(generated_data_folder, f"params_{set_name}.json")
 
-
     if not os.path.exists(X_file) or not os.path.exists(y_file) or not os.path.exists(cps_file) or not os.path.exists(params_file):
         generator = get_generator_object_from_config(generator_hyperparameters)
-        X, y, cps = generator.get_data(n_datasets=10)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
+        
+        X, y, cps = generator.get_data(10)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
+        print(X.shape, y.shape, cps.shape)
         # Save the generated data with explicit keys
         np.savez_compressed(X_file, X=X) #check if this works fo    def get_data(n_datasets=1):
         np.savez_compressed(y_file, y=y)
@@ -96,5 +104,3 @@ def make_dataset(generator_kwargs, generator_fn, generator_hyperparameters, gene
     y = [(y_instance - y_instance.mean())/y_instance.std() for y_instance in y]
 
     return X, y, cps#, params
-
-print(make_dataset())

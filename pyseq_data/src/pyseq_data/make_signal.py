@@ -42,10 +42,10 @@ class DataType:
                 if isinstance(f, Property) or isinstance(f, ChangeDecorator):
                     setattr(self, fname, properties[fname])
 
-    def get_data(n_datasets=1):
+    def get_data(self, n_datasets):
         ts, ys = np.zeros((n_datasets, self.length)), np.zeros((n_datasets, self.length))
         for i in range(n_datasets):
-            t, y = get_single_dataset()
+            t, y = self.get_single_dataset()
             ts[i] = t
             ys[i] = y
         return ts, ys, np.array([self.location] * n_datasets)
@@ -96,7 +96,9 @@ class ConstantData(DataType):
                 self.location = prop.location
                 setattr(self, prop, prop.get_value())
         t = np.linspace(self.time_start, self.time_stop, self.length)
-        y = np.random.normal(self.mean.get_value(), self.variance.get_value(), self.length)
+        print(np.abs(self.variance.get_value()))
+        print(self.mean.get_value().shape)
+        y = np.random.normal(self.mean.get_value(), np.abs(self.variance.get_value())).flatten()
         return t, y 
 
 @dataclass
@@ -106,11 +108,11 @@ class OscillationData(DataType):
     amplitude: Property
     frequency: Property
 
-    def get_data(self):
+    def get_single_dataset(self):
         for prop in vars(self):
             if isinstance(prop, ChangeDecorator):
                 setattr(self, prop, prop.get_value())
         t = np.linspace(self.time_start, self.time_stop, self.length)
-        y = np.random.normal(self.mean.get_value(), self.variance.get_value(), self.length)
+        y = np.random.normal(self.mean.get_value(), np.abs(self.variance.get_value()), self.length)
         y += self.amplitude.get_value() * np.cos(self.frequency.get_value() * 2 * np.pi * t)
         return y

@@ -6,10 +6,9 @@ import yaml
 import sys
 import numpy as np
 
+from pyseq.models.base_stack_detector import StackDetector
+from run_dataset_generation import make_dataset
 
-from src.models.base_stack_detector import StackDetector
-
-from src.data_generators.generate_dataset import generate_dataset
 
 def import_object_from_string(dotted_path):
     """Import an object (function, class, etc.) from a dotted module path like 'module.submodule.func'."""
@@ -30,15 +29,14 @@ def handle_open_file(filename):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--generator', default="src.data_generators.generation_script.generate_datasets", required=True, help='Dotted path to the generator function')
-    parser.add_argument('--generator-hyperparameters', default=None, help='YAML file of keyword arguments for the generator function (default: None, use empty dict)') 
+    parser.add_argument('--generator-hyperparameters', default=None)
     parser.add_argument('--regressor', required=True, help='Dotted path to the regressor class')
     parser.add_argument('--regressor-hyperparameters', default=None, help='YAML file of keyword arguments for the regressor class (default: None, use empty dict)')
-    parser.add_argument('--window-slider', default='src.models.window_sliders.window_slide.WindowSlider', help='Dotted path to the window slider class (default: WindowSlider)')
+    parser.add_argument('--window-slider', default='pyseq.models.window_sliders.window_slide.WindowSlider', help='Dotted path to the window slider class (default: WindowSlider)')
     parser.add_argument('--window-slider-kwargs', default=None, help='YAML file of keyword arguments for the window slider class (default: None, use empty dict)')
-    parser.add_argument('--thresholder', default='src.models.thresholders.wald_constant_thresholder.WaldConstantThresholder', help='Dotted path to the thresholder class (default: WaldConstantThresholder)')
+    parser.add_argument('--thresholder', default='pyseq.models.thresholders.wald_constant_thresholder.WaldConstantThresholder', help='Dotted path to the thresholder class (default: WaldConstantThresholder)')
     parser.add_argument('--thresholder-kwargs', default=None, help='YAML file of keyword arguments for the thresholder class (default: None, use empty dict)')
-    parser.add_argument('--scorer', default='src.models.scorers.cusum.BidirectionalCUSUMScorer', help='Score function to convert regression output to scores (default: cusum)')
+    parser.add_argument('--scorer', default='pyseq.models.scorers.cusum.BidirectionalCUSUMScorer', help='Score function to convert regression output to scores (default: cusum)')
     parser.add_argument('--plot-test-results', action='store_true', help='Whether to plot test results (default: False)')
 
     args = parser.parse_args()
@@ -51,10 +49,6 @@ def main():
     regressor_kwargs = handle_open_file(args.regressor_hyperparameters)
     window_slider_kwargs = handle_open_file(args.window_slider_kwargs)
     thresholder_kwargs = handle_open_file(args.thresholder_kwargs)
-    generator_kwargs = handle_open_file(args.generator_hyperparameters)
-
-    # Import data generator
-    generator_fn = import_object_from_string(args.generator)
     
     # Import window slider, regressor, thresholder, scorer
     regressor_cls = import_object_from_string(args.regressor)
@@ -63,7 +57,7 @@ def main():
     scorer = import_object_from_string(args.scorer)()
 
     window_slider_cls = import_object_from_string(args.window_slider)
-    window_slider = window_slider_cls(**window_slider_kwargs)
+    window_slider = window_slider_cls(window_size=1, skip_length=1)
     thresholder_cls = import_object_from_string(args.thresholder)
     thresholder = thresholder_cls(**thresholder_kwargs)
 
@@ -75,14 +69,14 @@ def main():
     if regressor.fittable:
         print("Model is fittable, training...")
         # If we want to add preprocessing steps, add them to this function call
-        X_train, y_train, cps = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="train")
+        X_train, y_train, cps = make_dataset(generator_hyperparameters=args.generator_hyperparameters, generator_name="test", set_name="train")
         sd.fit(X_train, y_train)
 
 
     # Validation for hyperparameter selection (not implemented yet)
     #TODO: Implement hyperparameter selection
     # Testing
-    X_test, y_test, cps = generate_dataset(generator_kwargs, generator_fn, generator_hyperparameters=args.generator_hyperparameters, generator_name=args.generator, set_name="test")
+    X_test, y_test, cps = make_dataset(generator_hyperparameters=args.generator_hyperparameters, generator_name="test", set_name="test")
 
     pred_test = sd.predict(X_test, y_test)
 
@@ -115,13 +109,11 @@ def main():
 if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
-        "--generator", "src.data_generators.generation_script.generate_datasets",
-        "--generator-hyperparameters", "config/generators/frequency-gradual-osc.yaml",
+        "--generator-hyperparameters", "/home/janneke/repos/pnc-eval/pyseq_data/src/pyseq_data/example_config.yaml",
         #"--regressor", "src.models.regressors.linear_regression.LinearRegressionModel",
-        "--regressor", "src.models.regressors.random_forest_regression.MultiOutputRandomForest",
+        "--regressor", "pyseq.models.regressors.random_forest_regression.MultiOutputRandomForest",
         #"--regressor-hyperparameters", "path/to/model_hyperparams.yaml",
-        "--window-slider-kwargs", "config/window_slider.yaml",
-        "--thresholder-kwargs", "config/wald-constant-thresholder.yaml",
+        # "--thresholder-kwargs", "config/wald-constant-thresholder.yaml",
         "--plot-test-results"
     ]
     main()
