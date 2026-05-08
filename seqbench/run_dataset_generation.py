@@ -74,7 +74,7 @@ def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
 
     os.makedirs(generated_data_folder, exist_ok=True)
 
-    X_file = os.path.join(generated_data_folder, f"X_{set_name}.npz")
+    t_file = os.path.join(generated_data_folder, f"t_{set_name}.npz")
     y_file = os.path.join(generated_data_folder, f"y_{set_name}.npz")
     cps_file = os.path.join(generated_data_folder, f"cps_{set_name}.npz")
     params_file = os.path.join(generated_data_folder, f"params_{set_name}.json")
@@ -94,7 +94,7 @@ def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
         #    json.dump(params, f, indent=2)
     else:
     # Load the generated data using explicit keys
-        X = np.load(X_file)["X"]
+        t = np.load(t_file)["t"]
         y = np.load(y_file)["y"]
         cps = np.load(cps_file)["cps"]
         #with open(params_file, "r") as f:
@@ -103,4 +103,4 @@ def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
     # Currently always standardize the y data, could implement generic preprocessing later?
     y = [(y_instance - y_instance.mean())/y_instance.std() for y_instance in y]
 
-    return X, y, cps#, params
+    return t, y, cps#, params

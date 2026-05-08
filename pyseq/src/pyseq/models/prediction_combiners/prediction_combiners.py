@@ -1,12 +1,10 @@
 import numpy as np
 
-
-
-
 def select_first(window_predictions, window_indices):
     """
     When multiple predictions exist for a single time point due to overlapping windows,
     this function selects the first prediction in the window.
+    This function assumes the end index is non-inclusive. 
     """
     predictions = np.zeros(window_indices[-1][1]) # Initialize an array to hold final predictions.
 
@@ -20,6 +18,7 @@ def select_last(window_predictions, window_indices):
     """
     When multiple predictions exist for a single time point due to overlapping windows,
     this function selects the last prediction in the window.
+    This function assumes the end index is non-inclusive.
     """
     predictions = np.zeros(window_indices[-1][1]) # Initialize an array to hold final predictions.
 
@@ -33,8 +32,9 @@ def select_mean(window_predictions, window_indices):
     """
     When multiple predictions exist for a single time point due to overlapping windows,
     this function selects the mean of the predictions in the window.
+    This function assumes the end index is non-inclusive.
     """
-    predictions = np.zeros(window_indices[-1[1]]) # Initialize an array to hold final predictions.
+    predictions = np.zeros(window_indices[-1][1]) # Initialize an array to hold final predictions.
     counts = np.zeros_like(predictions)  # To count how many predictions contribute to each point
 
     for preds, (start_idx, end_idx) in zip(window_predictions, window_indices):

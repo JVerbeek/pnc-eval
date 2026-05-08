@@ -63,7 +63,7 @@ def main():
 
     sd = StackDetector(window_slider=window_slider, regressor=regressor, 
                        thresholder=thresholder, 
-                       scorer=scorer, prediction_window_size=10)
+                       scorer=scorer)
 
     # Training (only if model is fittable)
     if regressor.fittable:
@@ -81,15 +81,15 @@ def main():
     pred_test = sd.predict(X_test, y_test)
 
     # optional test plotting:
+
     if args.plot_test_results:
-        import matplotlib.pyplot as plt 
-        for X_t, y_t, rp, scores in zip(X_test, y_test, pred_test, scores):
+        import matplotlib.pyplot as plt
+        for t, y_t, cp, scores, regressor_preds in zip(t_test_s, y_test_s, test_pred_s, scores_s, regressor_pred_s):
             fig, ax = plt.subplots(2, 1, figsize=(15, 10))
-            cp_plot = np.concatenate((scores, np.zeros(((sd.window_slider.window_size - sd.window_slider.skip_length),))))
-            ax[0].plot(X_t, y_t, "kx", markersize=20, label="data")
+            ax[0].plot(t, y_t, "kx", markersize=20, label="data")
             # ax.plot(X_t[:len(cp)], cp, linestyle="-", linewidth=3, color="r", label="changepoint locs")
-            ax[0].plot(X_t, np.concatenate((rp, np.zeros(len(X_t)-len(cp)))), linestyle="-", linewidth=3, color="r", label="regressor prediction")
-            ax[1].plot(X_t, np.concatenate((scores, np.zeros((sd.window_slider.window_size-sd.window_slider.skip_length),))), linestyle=":", linewidth=3, color="b", label="cusum score")
+            ax[0].plot(t, regressor_preds, linestyle="-", linewidth=3, color="r", label="regressor prediction")
+            ax[1].plot(t, scores, linestyle=":", linewidth=3, color="b", label="cusum score")
             ax[1].axhline(-np.log(thresholder.alpha), linestyle="-", linewidth=3, color="k", label="wald constant threshold")
             ax[0].set_xlabel("t", fontsize=30)
             ax[0].tick_params(axis='both', which='major', labelsize=15)
@@ -97,11 +97,11 @@ def main():
             ax[0].set_ylabel("y", fontsize=30)
             ax[1].set_xlabel("t", fontsize=30)
             ax[1].set_ylabel("score", fontsize=30)
-            ax[0].fill_between(X_t.flatten(), ax[0].get_ylim()[0], ax[0].get_ylim()[1], where=cp_plot > 0, color="red", alpha=0.3, label="CUSUM > threshold")
-            ax[1].fill_between(X_t.flatten(), ax[1].get_ylim()[0], ax[1].get_ylim()[1], where=cp_plot > 0, color="red", alpha=0.3, label="CUSUM > threshold")
-            plt.suptitle("GP regression on gradual frequency change in oscillating data", fontsize=30)
+            ax[0].fill_between(t.flatten(), ax[0].get_ylim()[0], ax[0].get_ylim()[1], where=scores > -np.log(thresholder.alpha), color="red", alpha=0.3, label="CUSUM > threshold")
+            ax[1].fill_between(t.flatten(), ax[1].get_ylim()[0], ax[1].get_ylim()[1], where=scores > -np.log(thresholder.alpha), color="red", alpha=0.3, label="CUSUM > threshold")
+            #plt.suptitle("GP regression on gradual frequency change in oscillating data", fontsize=30)
             plt.legend(fontsize=15)
-            plt.savefig("/home/janneke/repos/pnc-eval/constant-change-cusum.png", dpi=300)
+            plt.tight_layout()
             plt.show()
 
 

@@ -14,8 +14,7 @@ class BaseRegressionModel(abc.ABC):
 class FittableRegressionModel(BaseRegressionModel):
     def __init__(self, model):
         super().__init__(model)
-        self.fittable = True 
-
+        self.fittable = True
     @abc.abstractmethod
     def predict(self, input_window, prediction_window_size=1):
         pass
@@ -23,7 +22,8 @@ class FittableRegressionModel(BaseRegressionModel):
 class OnlineFittableRegressionModel(FittableRegressionModel):
     def __init__(self, model):
         super().__init__(model)
-        self.fittable = True 
+        self.fittable = True
+        self.fit_method = "online"
 
     @abc.abstractmethod
     def fit(self, input_window, prediction_window):
@@ -33,9 +33,10 @@ class BatchFittableRegressionModel(FittableRegressionModel):
     def __init__(self, model):
         super().__init__(model)
         self.fittable = True
+        self.fit_method = "batch"
 
     @abc.abstractmethod
     def fit(self, X, y):
-        # X: array-like of shape (n_windows, window_size)
+        # X: array-like of shape (n_windows, window_size+exogenous_features_size)
         # y: array-like of shape (n_windows, prediction_window_size)
         pass

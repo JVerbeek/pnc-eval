@@ -2,7 +2,7 @@ import abc
 
 class BaseThresholder(abc.ABC):
     def __init__(self):
-        self.is_fittable = False  # By default, thresholder is not fittable
+        self.fittable = False  # By default, thresholder is not fittable
 
     @abc.abstractmethod
     def threshold(self, scores):
@@ -11,8 +11,8 @@ class BaseThresholder(abc.ABC):
 class FittableThresholder(BaseThresholder):
     def __init__(self):
         super().__init__()
-        self.is_fittable = True
-        self.is_fitted = False
+        self.fittable = True
+        self.fitted = False
 
     @abc.abstractmethod
     def fit(self, scores, y=None):

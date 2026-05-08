@@ -17,7 +17,7 @@ class MultiOutputRandomForest(BatchFittableRegressionModel):
 
 
     def fit(self, X, y):
-        # X: array-like of shape (n_windows, window_size)
+        # X: array-like of shape (n_windows, window_size+exogenous_features_size)
         # y: array-like of shape (n_windows, prediction_window_size)
         self.model.fit(X, y)
 
@@ -42,7 +42,7 @@ class AutoRegressiveRandomForest(BatchFittableRegressionModel):
         self.multi_output = False
 
     def fit(self, X, y):
-        # X: array-like of shape (n_windows, window_size)
+        # X: array-like of shape (n_windows, window_size+exogenous_features_size)
         # y: array-like of shape (n_windows, prediction_window_size)
 
         # In autoregressive setting, we -always- predict only one step ahead, even though y may contain multiple steps.
