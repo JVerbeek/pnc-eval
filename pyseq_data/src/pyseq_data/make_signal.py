@@ -106,7 +106,6 @@ class ConstantData(DataType):
         if not isinstance(self.mean, SteppedChange):
             y[:self.location] += y[self.location:][0] - y[:self.location][-1]
         y[:self.location] -= y[self.location:][0] - y[:self.location][-1]
-        print("diff",  y[self.location:][0] - y[:self.location][-1])
         return t, y 
 
 @dataclass

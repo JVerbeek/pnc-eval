@@ -57,7 +57,7 @@ def main():
     scorer = import_object_from_string(args.scorer)()
 
     window_slider_cls = import_object_from_string(args.window_slider)
-    window_slider = window_slider_cls(predictor_window_size=3)
+    window_slider = window_slider_cls(predictor_window_size=2)
     thresholder_cls = import_object_from_string(args.thresholder)
     thresholder = thresholder_cls(**thresholder_kwargs)
 
@@ -86,8 +86,8 @@ def main():
         import matplotlib.pyplot as plt
         for i, p in enumerate(pred_test):
             plt.plot(X_test[i], y_test[i])
-            print(pred_test)
             plt.plot(X_test[i], p)
+            plt.fill_between(X_test[i], plt.ylim()[0], plt.ylim()[1], where=p > 0.5, color="red", alpha=0.3, label="CUSUM > threshold")
             plt.show()
         # for t, y_t, cp, scores, regressor_preds in zip(t_test_s, y_test_s, test_pred_s, scores_s, regressor_pred_s):
         #     fig, ax = plt.subplots(2, 1, figsize=(15, 10))
@@ -102,9 +102,9 @@ def main():
         #     ax[0].set_ylabel("y", fontsize=30)
         #     ax[1].set_xlabel("t", fontsize=30)
         #     ax[1].set_ylabel("score", fontsize=30)
+        #     #plt.suptitle("GP regression on gradual frequency change in oscillating data", fontsize=30)
         #     ax[0].fill_between(t.flatten(), ax[0].get_ylim()[0], ax[0].get_ylim()[1], where=scores > -np.log(thresholder.alpha), color="red", alpha=0.3, label="CUSUM > threshold")
         #     ax[1].fill_between(t.flatten(), ax[1].get_ylim()[0], ax[1].get_ylim()[1], where=scores > -np.log(thresholder.alpha), color="red", alpha=0.3, label="CUSUM > threshold")
-        #     #plt.suptitle("GP regression on gradual frequency change in oscillating data", fontsize=30)
         #     plt.legend(fontsize=15)
         #     plt.tight_layout()
         #     plt.show()
@@ -114,11 +114,12 @@ def main():
 if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
-        "--generator-hyperparameters", "/home/janneke/repos/pnc-eval/pyseq_data/src/pyseq_data/example_config.yaml",
-        #"--regressor", "src.models.regressors.linear_regression.LinearRegressionModel",
+        "--generator-hyperparameters", "seqbench/config/example_datagenerator_config.yaml",
+        #"--regressor", "pyseq.models.regressors.linear_regression.LinearRegressionModel",
+        "--window-slider-kwargs", "seqbench/config/window_slider.yaml",
         "--regressor", "pyseq.models.regressors.random_forest_regression.MultiOutputRandomForest",
         #"--regressor-hyperparameters", "path/to/model_hyperparams.yaml",
-        # "--thresholder-kwargs", "config/wald-constant-thresholder.yaml",
+        "--thresholder-kwargs", "seqbench/config/wald-constant-thresholder.yaml",
         "--plot-test-results"
     ]
     main()

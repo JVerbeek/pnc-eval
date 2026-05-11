@@ -83,7 +83,7 @@ def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
     if not os.path.exists(t_file) or not os.path.exists(y_file) or not os.path.exists(cps_file) or not os.path.exists(params_file):
         generator = get_generator_object_from_config(generator_hyperparameters)
         
-        t, y, cps = generator.get_data(3)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
+        t, y, cps = generator.get_data(2)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
         # Save the generated data with explicit keys
         np.savez_compressed(t_file, t=t) #check if this works fo    def get_data(n_datasets=1):
         np.savez_compressed(y_file, y=y)

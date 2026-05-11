@@ -1,8 +1,0 @@
-change_type: "perturbation"
-stepped: True
-oscillating: False
-location: 250
-time_range: [0, 1]
-n_datapoints: 500
-glob_noise_params: [0, 1]
-glob_noise_dist: "norm"
