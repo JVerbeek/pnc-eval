@@ -33,7 +33,7 @@ def get_generator_object_from_config(config="pyseq_data/src/pyseq_data/example_c
         sample = dist.rvs(1)
         value = psdf.Property(sample, dist)
         if params["change"]:
-            after_change_value = dist.rvs(1)
+            after_change_value = sample + dist.rvs(1)
             change_dict = { "location": changepoint["location"],
                             "before_change": value,
                             "after_change": after_change_value,
