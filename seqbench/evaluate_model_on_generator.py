@@ -69,7 +69,10 @@ def main():
     if regressor.fittable:
         print("Model is fittable, training...")
         # If we want to add preprocessing steps, add them to this function call
-        X_train, y_train, cps = make_dataset(generator_hyperparameters=args.generator_hyperparameters, generator_name="test", set_name="train")
+        t_train, y_train, cps = make_dataset(generator_hyperparameters=args.generator_hyperparameters, generator_name="test", set_name="train")
+        
+        # this is probably temporary, unless we decide to have variable length sequences:
+        t_train = [t_train] * len(y_train)
 
         sd.fit(y_s=y_train, cps_s=cps)
 
@@ -77,37 +80,40 @@ def main():
     # Validation for hyperparameter selection (not implemented yet)
     #TODO: Implement hyperparameter selection
     # Testing
-    X_test, y_test, cps = make_dataset(generator_hyperparameters=args.generator_hyperparameters, generator_name="test", set_name="test")
+    t_test, y_test, cps = make_dataset(generator_hyperparameters=args.generator_hyperparameters, generator_name="test", set_name="test")
 
-    pred_test = sd.predict(y_s=y_test)
+    # Similarly temporary until we decide to have variable length sequences:
+    t_test = [t_test] * len(y_test)
+
+    pred_test, scores_test, reg_pred_test = sd.predict(y_s=y_test, return_scores=True, return_regressor_predictions=True)
 
     # optional test plotting:
     if args.plot_test_results:
         import matplotlib.pyplot as plt
-        for i, p in enumerate(pred_test):
-            plt.plot(X_test[i], y_test[i])
-            plt.plot(X_test[i], p)
-            plt.fill_between(X_test[i], plt.ylim()[0], plt.ylim()[1], where=p > 0.5, color="red", alpha=0.3, label="CUSUM > threshold")
-            plt.show()
-        # for t, y_t, cp, scores, regressor_preds in zip(t_test_s, y_test_s, test_pred_s, scores_s, regressor_pred_s):
-        #     fig, ax = plt.subplots(2, 1, figsize=(15, 10))
-        #     ax[0].plot(t, y_t, "kx", markersize=20, label="data")
-        #     # ax.plot(X_t[:len(cp)], cp, linestyle="-", linewidth=3, color="r", label="changepoint locs")
-        #     ax[0].plot(t, regressor_preds, linestyle="-", linewidth=3, color="r", label="regressor prediction")
-        #     ax[1].plot(t, scores, linestyle=":", linewidth=3, color="b", label="cusum score")
-        #     ax[1].axhline(-np.log(thresholder.alpha), linestyle="-", linewidth=3, color="k", label="wald constant threshold")
-        #     ax[0].set_xlabel("t", fontsize=30)
-        #     ax[0].tick_params(axis='both', which='major', labelsize=15)
-        #     ax[1].tick_params(axis='both', which='major', labelsize=15)
-        #     ax[0].set_ylabel("y", fontsize=30)
-        #     ax[1].set_xlabel("t", fontsize=30)
-        #     ax[1].set_ylabel("score", fontsize=30)
-        #     #plt.suptitle("GP regression on gradual frequency change in oscillating data", fontsize=30)
-        #     ax[0].fill_between(t.flatten(), ax[0].get_ylim()[0], ax[0].get_ylim()[1], where=scores > -np.log(thresholder.alpha), color="red", alpha=0.3, label="CUSUM > threshold")
-        #     ax[1].fill_between(t.flatten(), ax[1].get_ylim()[0], ax[1].get_ylim()[1], where=scores > -np.log(thresholder.alpha), color="red", alpha=0.3, label="CUSUM > threshold")
-        #     plt.legend(fontsize=15)
-        #     plt.tight_layout()
+        # for i, p in enumerate(pred_test):
+        #     plt.plot(X_test[i], y_test[i])
+        #     plt.plot(X_test[i], p)
+        #     plt.fill_between(X_test[i], plt.ylim()[0], plt.ylim()[1], where=p > 0.5, color="red", alpha=0.3, label="CUSUM > threshold")
         #     plt.show()
+        for t, y_t, cp, scores, regressor_preds in zip(t_test, y_test, cps, pred_test, scores_test, reg_pred_test):
+            fig, ax = plt.subplots(2, 1, figsize=(15, 10))
+            ax[0].plot(t, y_t, "kx", markersize=20, label="data")
+            # ax.plot(X_t[:len(cp)], cp, linestyle="-", linewidth=3, color="r", label="changepoint locs")
+            ax[0].plot(t, regressor_preds, linestyle="-", linewidth=3, color="r", label="regressor prediction")
+            ax[1].plot(t, scores, linestyle=":", linewidth=3, color="b", label="cusum score")
+            ax[1].axhline(-np.log(thresholder.alpha), linestyle="-", linewidth=3, color="k", label="wald constant threshold")
+            ax[0].set_xlabel("t", fontsize=30)
+            ax[0].tick_params(axis='both', which='major', labelsize=15)
+            ax[1].tick_params(axis='both', which='major', labelsize=15)
+            ax[0].set_ylabel("y", fontsize=30)
+            ax[1].set_xlabel("t", fontsize=30)
+            ax[1].set_ylabel("score", fontsize=30)
+            #plt.suptitle("GP regression on gradual frequency change in oscillating data", fontsize=30)
+            ax[0].fill_between(t.flatten(), ax[0].get_ylim()[0], ax[0].get_ylim()[1], where=scores > -np.log(thresholder.alpha), color="red", alpha=0.3, label="CUSUM > threshold")
+            ax[1].fill_between(t.flatten(), ax[1].get_ylim()[0], ax[1].get_ylim()[1], where=scores > -np.log(thresholder.alpha), color="red", alpha=0.3, label="CUSUM > threshold")
+            plt.legend(fontsize=15)
+            plt.tight_layout()
+            plt.show()
 
 
 # For testing purposes, provide defaults if not running as a script
