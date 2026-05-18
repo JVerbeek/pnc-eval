@@ -23,8 +23,8 @@ def get_generator_object_from_config(config="pyseq_data/src/pyseq_data/example_c
     changepoint, properties, data_config, hyperparams = get_generator_kwargs(config)
     kwargs = {}
     
-    n_datapoints = data_config["n_datapoints"]
-    kwargs["length"] = n_datapoints
+    kwargs["n_datasets"] = data_config["n_datasets"]
+    kwargs["length"] = data_config["n_datapoints"]
     kwargs["time_start"], kwargs["time_stop"] = data_config["time_range"][0], data_config["time_range"][1]
 
 
@@ -37,7 +37,7 @@ def get_generator_object_from_config(config="pyseq_data/src/pyseq_data/example_c
             change_dict = { "location": changepoint["location"],
                             "before_change": value,
                             "after_change": after_change_value,
-                            "length": n_datapoints
+                            "length": kwargs["length"]
                             }
             if changepoint["stepped"]:
                 result = psdf.SteppedChange(**change_dict)
@@ -83,7 +83,8 @@ def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
     if not os.path.exists(t_file) or not os.path.exists(y_file) or not os.path.exists(cps_file) or not os.path.exists(params_file):
         generator = get_generator_object_from_config(generator_hyperparameters)
         
-        t, y, cps = generator.get_data(2)        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
+        t, y, cps = generator.get_data()        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
+        print(f"Generated {generator.n_datasets} `datasets...")
         # Save the generated data with explicit keys
         np.savez_compressed(t_file, t=t) #check if this works fo    def get_data(n_datasets=1):
         np.savez_compressed(y_file, y=y)

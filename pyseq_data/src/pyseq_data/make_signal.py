@@ -25,6 +25,7 @@ class DataType:
     time_start: float
     time_stop: float 
     length: int
+    n_datasets: int
 
     def __post_init__(self):
         for fname, ftype in self.__annotations__.items():
@@ -32,7 +33,8 @@ class DataType:
             if isinstance(f, Property):
                 f.value = f.asarray(self.length)
 
-    def get_data(self, n_datasets):
+    def get_data(self, n_datasets=None):
+        n_datasets = n_datasets if n_datasets else self.n_datasets
         ts, ys = np.zeros((n_datasets, self.length)), np.zeros((n_datasets, self.length))
         for i in range(n_datasets):
             t, y = self.get_single_dataset()
