@@ -133,9 +133,7 @@ class StackDetector:
 
 
     def fit_predict(self, X_s, y_s):
-
         self.fit(X_s, y_s)
-
         return self.predict(X_s, y_s)
 
     #If we want early stopping, we need a mirror of this function which has the functionality to use y_s and self.thresholder to determine whether the change point has been detected yet

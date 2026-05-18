@@ -84,22 +84,15 @@ def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
         generator = get_generator_object_from_config(generator_hyperparameters)
         
         t, y, cps = generator.get_data()        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
-        print(f"Generated {generator.n_datasets} `datasets...")
-        # Save the generated data with explicit keys
+        print(f"Generated {generator.n_datasets} datasets...")
         np.savez_compressed(t_file, t=t) #check if this works fo    def get_data(n_datasets=1):
         np.savez_compressed(y_file, y=y)
         np.savez_compressed(cps_file, cps=cps)
-        # Save params as JSON (assume params is a plain dict)
-        #print(params)
-        #with open(params_file, "w") as f:
-        #    json.dump(params, f, indent=2)
     else:
     # Load the generated data using explicit keys
         t = np.load(t_file)["t"]
         y = np.load(y_file)["y"]
         cps = np.load(cps_file)["cps"]
-        #with open(params_file, "r") as f:
-        #    params = json.load(f)
 
     # Currently always standardize the y data, could implement generic preprocessing later?
     y = [(y_instance - y_instance.mean())/y_instance.std() for y_instance in y]

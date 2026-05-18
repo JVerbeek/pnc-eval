@@ -80,6 +80,7 @@ def main():
     # Validation for hyperparameter selection (not implemented yet)
     #TODO: Implement hyperparameter selection
     # Testing
+    print("Testing phase...")
     t_test, y_test, cps = make_dataset(generator_hyperparameters=args.generator_hyperparameters, generator_name="test", set_name="test")
 
     # Similarly temporary until we decide to have variable length sequences:

@@ -37,7 +37,7 @@ changepoint:
 data_config:
   oscillating: False
   n_datapoints: 500
-  n_datasets: 10
+  n_datasets: 100
   time_range:
   - 0
   - 1
