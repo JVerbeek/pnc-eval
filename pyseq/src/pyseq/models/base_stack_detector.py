@@ -13,11 +13,15 @@ class StackDetector:
         self.prediction_selection_strategy = prediction_selection_strategy
 
         self.target_window_size = self.window_slider.target_window_size
+        self.predictor_window_size = self.window_slider.predictor_window_size
 
         # Input checks:
         # target_window_size must be positive integer
         if not (isinstance(self.target_window_size, int) and self.target_window_size > 0):
             raise ValueError("target_window_size must be a positive integer.")
+        
+        if not (isinstance(self.predictor_window_size, int) and self.predictor_window_size > 0):
+            raise ValueError("predictor_window_size must be a positive integer.")
         
         # prediction_selection_strategy must be one of 'first', 'last', 'mean'
         if prediction_selection_strategy not in ['first', 'last', 'mean']:
