@@ -57,7 +57,7 @@ def main():
     scorer = import_object_from_string(args.scorer)()
 
     window_slider_cls = import_object_from_string(args.window_slider)
-    window_slider = window_slider_cls(predictor_window_size=2)
+    window_slider = window_slider_cls(**window_slider_kwargs)
     thresholder_cls = import_object_from_string(args.thresholder)
     thresholder = thresholder_cls(**thresholder_kwargs)
 
