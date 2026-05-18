@@ -37,6 +37,7 @@ def main():
     parser.add_argument('--thresholder', default='pyseq.models.thresholders.wald_constant_thresholder.WaldConstantThresholder', help='Dotted path to the thresholder class (default: WaldConstantThresholder)')
     parser.add_argument('--thresholder-kwargs', default=None, help='YAML file of keyword arguments for the thresholder class (default: None, use empty dict)')
     parser.add_argument('--scorer', default='pyseq.models.scorers.cusum.BidirectionalCUSUMScorer', help='Score function to convert regression output to scores (default: cusum)')
+    parser.add_argument('--scorer-kwargs', default=None, help='YAML file of keyword arguments for the scorer class (default: None, use empty dict)')
     parser.add_argument('--plot-test-results', action='store_true', help='Whether to plot test results (default: False)')
 
     args = parser.parse_args()
@@ -49,15 +50,16 @@ def main():
     regressor_kwargs = handle_open_file(args.regressor_hyperparameters)
     window_slider_kwargs = handle_open_file(args.window_slider_kwargs)
     thresholder_kwargs = handle_open_file(args.thresholder_kwargs)
+    scorer_kwargs = handle_open_file(args.scorer_kwargs)
     
     # Import window slider, regressor, thresholder, scorer
     regressor_cls = import_object_from_string(args.regressor)
     regressor = regressor_cls(**regressor_kwargs)
     #metric = import_object_from_string(args.metric)
-    scorer = import_object_from_string(args.scorer)()
-
+    scorer_cls = import_object_from_string(args.scorer)
+    scorer = scorer_cls(**scorer_kwargs)
     window_slider_cls = import_object_from_string(args.window_slider)
-    window_slider = window_slider_cls(predictor_window_size=2)
+    window_slider = window_slider_cls(**window_slider_kwargs)
     thresholder_cls = import_object_from_string(args.thresholder)
     thresholder = thresholder_cls(**thresholder_kwargs)
 
@@ -124,6 +126,7 @@ if __name__ == "__main__":
         "--regressor", "pyseq.models.regressors.random_forest_regression.MultiOutputRandomForest",
         #"--regressor-hyperparameters", "path/to/model_hyperparams.yaml",
         "--thresholder-kwargs", "seqbench/config/wald-constant-thresholder.yaml",
+        "--scorer-kwargs", "seqbench/config/cusum.yaml",
         "--plot-test-results"
     ]
     main()
