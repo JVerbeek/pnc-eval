@@ -99,9 +99,6 @@ class StackDetector:
 
         if self.thresholder.fittable:
 
-            if y_s is None:
-                raise ValueError("y_s cannot be None if the thresholder is fittable.")
-            
             # Get regressor scores on all data
             regressor_predictions = self._get_regressor_predictions(y_s_normal, t_s_normal, X_s_normal) 
 
