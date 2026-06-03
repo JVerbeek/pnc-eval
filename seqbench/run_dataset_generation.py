@@ -21,8 +21,9 @@ def get_generator_kwargs(fname, kwargs_only=False):
 
 def get_generator_object_from_config(config="pyseq_data/src/pyseq_data/example_config.yaml"):
     changepoint, properties, data_config, hyperparams = get_generator_kwargs(config)
+    np.random.seed(data_config["random_seed"])
+
     kwargs = {}
-    
     kwargs["n_datasets"] = data_config["n_datasets"]
     kwargs["length"] = data_config["n_datapoints"]
     kwargs["time_start"], kwargs["time_stop"] = data_config["time_range"][0], data_config["time_range"][1]
@@ -71,25 +72,27 @@ def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
     else: # no hyperparameters provided, eenerator_kwargs.g. args.generator_hyperparameters is None
         generator_kwargs_str = "default"
 
-    generated_data_folder = os.path.join("generated_data", generator_name.replace('.', '_'), generator_kwargs_str)
+    generated_data_folder = os.path.join("seqbench", "generated_data", generator_name.replace('.', '_'), generator_kwargs_str)
+    print("Data folder: ", generated_data_folder)
 
     os.makedirs(generated_data_folder, exist_ok=True)
 
     t_file = os.path.join(generated_data_folder, f"t_{set_name}.npz")
     y_file = os.path.join(generated_data_folder, f"y_{set_name}.npz")
     cps_file = os.path.join(generated_data_folder, f"cps_{set_name}.npz")
-    params_file = os.path.join(generated_data_folder, f"params_{set_name}.json")
+    #params_file = os.path.join(generated_data_folder, f"params_{set_name}.json")
 
-    if not os.path.exists(t_file) or not os.path.exists(y_file) or not os.path.exists(cps_file) or not os.path.exists(params_file):
+    if not os.path.exists(t_file) or not os.path.exists(y_file) or not os.path.exists(cps_file):
         generator = get_generator_object_from_config(generator_hyperparameters)
         
         t, y, cps = generator.get_data()        # note:X_train is a N_d long list of matrices, Y_train is a N_d long list of indices of singular change points
         print(f"Generated {generator.n_datasets} datasets...")
-        np.savez_compressed(t_file, t=t) #check if this works fo    def get_data(n_datasets=1):
+        np.savez_compressed(t_file, t=t)
         np.savez_compressed(y_file, y=y)
         np.savez_compressed(cps_file, cps=cps)
     else:
     # Load the generated data using explicit keys
+        print("Data already generated. Loading data.")
         t = np.load(t_file)["t"]
         y = np.load(y_file)["y"]
         cps = np.load(cps_file)["cps"]
@@ -97,7 +100,7 @@ def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
     # Currently always standardize the y data, could implement generic preprocessing later?
     y = [(y_instance - y_instance.mean())/y_instance.std() for y_instance in y]
 
-    return t, y, cps#, params
+    return t, y, cps #, params
 
 
 if __name__ == "__main__":
