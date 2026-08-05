@@ -35,7 +35,7 @@ changepoint:
 
 # Data config 
 data_config:
-  oscillating: False
+  type: "constant"
   n_datapoints: 500
   n_datasets: 10
   time_range:
