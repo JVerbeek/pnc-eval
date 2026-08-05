@@ -1,7 +1,8 @@
 import sys
 sys.path.append("/home/janneke/repos/pnc-eval/")
-from src.models.regressors.base_regression_models import BaseRegressionModel
+from pyseq.models.regressors.base_regression_models import BaseRegressionModel
 import numpy as np
+import gpflow as gpf
 from gpflow.models import GPR
 from gpflow.kernels import RBF
 from gpflow.optimizers import Scipy
@@ -9,7 +10,7 @@ from gpflow.optimizers import Scipy
 class GPRModel(BaseRegressionModel):
     def __init__(self):
         #super().__init__(model)
-        self.is_fittable = False
+        self.fittable = False
 
 
     def predict(self, input_window, prediction_window_size=1):
@@ -19,10 +20,10 @@ class GPRModel(BaseRegressionModel):
         x_new = np.linspace(1, 1+diff, prediction_window_size).reshape(-1, 1)
         input_window = np.reshape(input_window, (-1, 1))
         #kernel = 1.0 * RBF(length_scale=1) + WhiteKernel(0.1) 
-        kernel = RBF()
+        kernel = gpf.kernels.Periodic(gpf.kernels.RBF())
         model = GPR((x, input_window), kernel=kernel)
         optimizer = Scipy()
         optimizer.minimize(model.training_loss, model.trainable_variables)
-        y_pred = model.predict_y(x_new)[0].numpy().flatten()
+        y_pred = model.predict_f(x_new)[0].numpy().flatten()
         return y_pred
     

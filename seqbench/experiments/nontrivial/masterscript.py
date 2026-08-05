@@ -1,6 +1,8 @@
 import argparse
 import os
 import sys
+
+sys.path.append("/home/janneke/repos/pnc-eval/seqbench/")
 import numpy as np
 from utils import handle_open_file, import_object_from_string
 from plotting import plot_cusum_results
@@ -53,7 +55,9 @@ def main():
                        scorer=scorer)
 
     t_train, y_train, cps = make_dataset(generator_hyperparameters=args.generator_hyperparameters, generator_name="test", set_name="train")
-
+    import matplotlib.pyplot as plt
+    plt.plot(y_train[0])
+    plt.show()
     # Training (only if model is fittable)
     if regressor.fittable:
         print("Model is fittable, training...")
@@ -63,18 +67,18 @@ def main():
     # Testing
     print("Testing phase...")
 
-    pred_test, scores_test, reg_pred_test = sd.predict(y_s=y_test, return_scores=True, return_regressor_predictions=True)
+    pred_test, scores_test, reg_pred_test = sd.predict(y_s=y_train, return_scores=True, return_regressor_predictions=True)
 
     # optional test plotting:
     if args.plot_test_results:
-        plot_cusum_results(results)
+        plot_cusum_results([t_train, y_train, cps, pred_test, scores_test, reg_pred_test], sd.thresholder.alpha)
 
 
 # For testing purposes, provide defaults if not running as a script
 if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
-        "--generator-hyperparameters", "seqbench/config/example_datagenerator_config.yaml",
+        "--generator-hyperparameters", "seqbench/experiments/nontrivial/data_config.yaml",
         #"--regressor", "pyseq.models.regressors.linear_regression.LinearRegressionModel",
         "--window-slider-kwargs", "seqbench/config/window_slider.yaml",
         "--regressor", "pyseq.models.regressors.random_forest_regression.MultiOutputRandomForest",

@@ -1,5 +1,7 @@
 import importlib
 import yaml
+import sys
+import numpy as np
 
 def import_object_from_string(dotted_path):
     """Import an object (function, class, etc.) from a dotted module path like 'module.submodule.func'."""
@@ -15,5 +17,19 @@ def handle_open_file(filename):
                 kwargs = yaml.safe_load(f)
         return kwargs
     except FileNotFoundError:
-        print(f"File not found for {filename}. Did you supply the correct path?")
+        print(f"File not found for {filename}. Did you supply the correct path?", file=sys.stderr)
         sys.exit()
+
+def write_results(filename, results):
+    """ Writes results to file with name matching dataset hex name.
+    results (list): list of results to write away. Minimally contains
+    predictions, but can contain scores and regression predictions. 
+    
+    """
+    ### Construct results_dict adaptively
+    names = ["predictions", "scores", "regression_predictions"]
+    results_dict = {names[i]: r for i, r in enumerate(results)}
+    
+    # Save results (unpack results_dict to kwargs, so that we have named arrays)
+    np.savez(filename, **results_dict)
+    return

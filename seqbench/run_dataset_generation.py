@@ -48,9 +48,13 @@ def get_generator_object_from_config(config="pyseq_data/src/pyseq_data/example_c
             result = value 
         kwargs[name] = result
             
-    if data_config["oscillating"]:
+    if data_config["type"] == "oscillating":
         ds = psdf.OscillationData(**kwargs, location=changepoint["location"])
-    else: 
+    elif data_config["type"] == "sawtooth":
+        ds = psdf.SawtoothData(**kwargs, location=changepoint["location"])
+    elif data_config["type"] == "squarewave":
+        ds = psdf.SquareWaveData(**kwargs, location=changepoint["location"])
+    else: # It is constant, and we don't need a couple of params
         kwargs.pop("frequency")
         kwargs.pop("amplitude")
         ds = psdf.ConstantData(**kwargs, location=changepoint["location"]) 
@@ -100,7 +104,7 @@ def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
     # Currently always standardize the y data, could implement generic preprocessing later?
     y = [(y_instance - y_instance.mean())/y_instance.std() for y_instance in y]
 
-    return t, y, cps #, params
+    return t, y, cps, generator_kwargs_str
 
 
 if __name__ == "__main__":

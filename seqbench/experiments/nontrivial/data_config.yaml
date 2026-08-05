@@ -25,6 +25,13 @@ properties:
     dist_params:
     - 5
     - 8
+    change: False
+
+  n_harmonics:
+    dist: uniform
+    dist_params:
+      - 5
+      - 20
     change: True
 
 # Properties of the changepoint
@@ -35,7 +42,7 @@ changepoint:
 
 # Data config 
 data_config:
-  oscillating: False
+  type: "squarewave"
   n_datapoints: 500
   n_datasets: 10
   time_range:

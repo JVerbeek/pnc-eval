@@ -50,6 +50,7 @@ class DataType:
             if isinstance(prop, ChangeDecorator):
                 prop.before_change.update_value()
                 after_change = prop.before_change.distribution.rvs(1)
+        self.__post_init__()
 
 @dataclass
 class ChangeDecorator():
@@ -103,10 +104,15 @@ class ConstantData(DataType):
         t = np.linspace(self.time_start, self.time_stop, self.length)
         mean = self.mean.get_value().flatten()
         std = self.variance.get_value().flatten()
-        y = mean + np.random.normal(0, std**2, self.length) * std**2
+        y = mean + np.random.normal(0, std**2, self.length)
         y = y.flatten()
         if not isinstance(self.mean, SteppedChange):
-            y[:self.location] += y[self.location:][0] - y[:self.location][-1]
+            y[:self.location] += y[self.location] - y[self.location - 1]
+            mean_difference = np.mean(y[:self.location]) - np.mean(y[self.location:])   # start - end 
+            if mean_difference > 0: # start higher than end, add diff to end
+                y[self.location:] += mean_difference
+            else:  # difference is 0 or negative
+                y[self.location:] -= mean_difference
         y[:self.location] -= y[self.location:][0] - y[:self.location][-1]
         return t, y 
 
@@ -128,5 +134,80 @@ class OscillationData(DataType):
         y += amp * np.cos(freq * 2 * np.pi * t)
 
         if not isinstance(self.mean, SteppedChange):
-            y[:self.location] += y[self.location:][0] - y[:self.location][-1]
+            y[:self.location] += y[self.location] - y[self.location - 1]
+            mean_difference = np.mean(y[:self.location]) - np.mean(y[self.location:])   # start - end 
+            if mean_difference > 0: # start higher than end, add diff to end
+                y[self.location:] += mean_difference
+            else:  # difference is 0 or negative
+                y[self.location:] -= mean_difference
+            
+        return t, y
+
+@dataclass
+class SawtoothData(DataType):
+    mean: Property
+    variance: Property
+    amplitude: Property
+    frequency: Property
+    location: 0
+
+    def get_single_dataset(self):
+        t = np.linspace(self.time_start, self.time_stop, self.length)
+        mean = self.mean.get_value().flatten()
+        std = self.variance.get_value().flatten()
+        amp = self.amplitude.get_value().flatten()
+        freq = self.frequency.get_value().flatten()
+        y = mean + np.random.normal(0, std**2, self.length)
+        y += amp * (2.0 * ( (freq * t + 1/(2*np.pi)) % 1.0 ) - 1.0)
+        if not isinstance(self.mean, SteppedChange):
+            y[:self.location] += y[self.location] - y[self.location - 1]
+            mean_difference = np.mean(y[:self.location]) - np.mean(y[self.location:])   # start - end 
+            print(y[self.location:].mean()) 
+            if mean_difference > 0: # start higher than end, add diff to end
+                y[self.location:] -= mean_difference
+            else:  # difference is 0 or negative
+                y[self.location:] += mean_difference
+            print(y[self.location:].mean()) 
+            np.testing.assert_almost_equal(np.mean(y[:self.location]), np.mean(y[self.location:])) # start - end 
+        return t, y
+
+@dataclass
+class SquareWaveData(DataType):
+    mean: Property
+    variance: Property
+    amplitude: Property
+    frequency: Property
+    n_harmonics: Property
+    location: 0
+
+    def get_single_dataset(self):
+        t = np.linspace(self.time_start, self.time_stop, self.length)
+        mean = self.mean.get_value().flatten()
+        std = self.variance.get_value().flatten()
+        amp = self.amplitude.get_value().flatten()
+        freq = self.frequency.get_value().flatten()
+        num_harmonics = self.n_harmonics.get_value().flatten().astype(int)
+        num_harmonics_before = num_harmonics[0] 
+        num_harmonics_after = num_harmonics[-1] 
+
+        square_wave_first_half = 0
+        for n in range(num_harmonics_before):
+            harmonic = (2 * n) + 1 
+            square_wave_first_half += (4 / np.pi) * amp[:self.location] * np.sin(2 * np.pi * harmonic * freq[:self.location] * t[:self.location]) / harmonic
+
+        square_wave_second_half = 0
+        for n in range(num_harmonics_after):
+            harmonic = (2 * n) + 1 
+            square_wave_second_half += (4 / np.pi) * amp[self.location:] * np.sin(2 * np.pi * harmonic * freq[self.location:] * t[self.location:]) / harmonic
+
+        y = np.concatenate((square_wave_first_half, square_wave_second_half))
+        y += mean + np.random.normal(mean, std**2, self.length)
+        if not isinstance(self.mean, SteppedChange):
+            y[:self.location] += y[self.location] - y[self.location - 1]
+            mean_difference = np.mean(y[:self.location]) - np.mean(y[self.location:])   # start - end 
+            if mean_difference > 0: # start higher than end, add diff to end
+                y[self.location:] += mean_difference
+            else:  # difference is 0 or negative
+                y[self.location:] += mean_difference
+            np.testing.assert_almost_equal(np.mean(y[:self.location]), np.mean(y[self.location:])) # start - end 
         return t, y

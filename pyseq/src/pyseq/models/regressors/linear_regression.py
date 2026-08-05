@@ -6,7 +6,7 @@ class LinearRegressionModel(BaseRegressionModel):
     def __init__(self):
         model = LinearRegression()
         super().__init__(model)
-        self.is_fittable = False # Linear regression in sklearn is not fittable in the sense we need here, i.e. it does not learn form normal data at large
+        self.fittable = False # Linear regression in sklearn is not fittable in the sense we need here, i.e. it does not learn form normal data at large
 
 
     def predict(self, input_window, prediction_window_size=1):

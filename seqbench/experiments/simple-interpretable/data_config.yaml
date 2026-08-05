@@ -16,15 +16,15 @@ properties:
   variance:
     dist: uniform
     dist_params:
-    - 0.3
-    - 0.8
+    - 0.1
+    - 1
     change: False
 
   mean:
     dist: uniform
     dist_params:
-    - 5
-    - 8
+    - -3
+    - 3
     change: True
 
 # Properties of the changepoint
@@ -35,7 +35,7 @@ changepoint:
 
 # Data config 
 data_config:
-  oscillating: False
+  type: "constant"
   n_datapoints: 500
   n_datasets: 10
   time_range:

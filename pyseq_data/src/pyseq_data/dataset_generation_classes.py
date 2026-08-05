@@ -51,7 +51,7 @@ def make_dataclass(config):
     dataclass = parse_data_config(config["data_config"])
     properties = parse_properties(config["properties"])
     dataclass.update(properties)
-    time_range = confdataclass_configig["data_config"]["time_range"]
+    time_range = config["data_config"]["time_range"]
     x = np.linspace(time_range[0], time_range[1], config["data_config"]["n_datapoints"])
     return x, dataclass
 
@@ -62,8 +62,3 @@ def generate_multiple_datasets(dataclass_config):
         y = dataclass.get_data()
         ts.append(t), ys.append(y), cps.append(dataclass_config["properties"]["changepoint"]["location"])
     return ts, ys, cps  
-
-if __name__=="__main__":
-    cfg = yaml.safe_load("/home/janneke/repos/pnc-eval/pyseq_data/src/pyseq_data/example_config.yaml")
-    ts, ys, cps = generate_multiple_datasets(dataset_cfg)
-    print(ts, ys, cps)
