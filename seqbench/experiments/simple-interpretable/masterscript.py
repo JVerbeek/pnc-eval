@@ -2,7 +2,9 @@ import argparse
 import os
 import sys
 
-sys.path.append("/home/janneke/src/pnc-eval/seqbench/")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SEQBENCH_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
+sys.path.append(SEQBENCH_DIR)
 import matplotlib.pyplot as plt
 import numpy as np
 from utils import handle_open_file, import_object_from_string, write_results
@@ -32,6 +34,7 @@ def main():
     args = parser.parse_args()
 
     results_path = os.path.dirname(__file__)+"/results/"
+    os.makedirs(results_path + "/figures/", exist_ok=True)
 
     # Use the generator and model
     # Parse model and generator kwargs from YAML 
@@ -80,11 +83,11 @@ def main():
 if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
-        "--generator-hyperparameters", "seqbench/experiments/simple-interpretable/data_config.yaml",
+        "--generator-hyperparameters", os.path.join(SCRIPT_DIR, "data_config.yaml"),
         "--regressor", "pyseq.models.regressors.linear_regression.LinearRegressionModel",
-        "--window-slider-kwargs", "seqbench/config/window_slider.yaml",
-        "--thresholder-kwargs", "seqbench/config/wald-constant-thresholder.yaml",
-        "--scorer-kwargs", "seqbench/config/cusum.yaml",
+        "--window-slider-kwargs", os.path.join(SEQBENCH_DIR, "config", "window_slider.yaml"),
+        "--thresholder-kwargs", os.path.join(SEQBENCH_DIR, "config", "wald-constant-thresholder.yaml"),
+        "--scorer-kwargs", os.path.join(SEQBENCH_DIR, "config", "cusum.yaml"),
         "--plot-test-results",
         "--write-results"
     ]

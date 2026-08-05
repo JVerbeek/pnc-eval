@@ -8,6 +8,8 @@ import pyseq
 import pyseq_data.utilities as psdu
 import pyseq_data.make_signal as psdf
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 def get_generator_kwargs(fname, kwargs_only=False):
     with open(fname) as f:
@@ -76,7 +78,7 @@ def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
     else: # no hyperparameters provided, eenerator_kwargs.g. args.generator_hyperparameters is None
         generator_kwargs_str = "default"
 
-    generated_data_folder = os.path.join("seqbench", "generated_data", generator_name.replace('.', '_'), generator_kwargs_str)
+    generated_data_folder = os.path.join(SCRIPT_DIR, "generated_data", generator_name.replace('.', '_'), generator_kwargs_str)
     print("Data folder: ", generated_data_folder)
 
     os.makedirs(generated_data_folder, exist_ok=True)
