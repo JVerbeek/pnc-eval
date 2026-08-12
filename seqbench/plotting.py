@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np 
 
-def plot_cusum_results(results, threshold, filename=None):
+def plot_cusum_results(results, threshold, filename=None, time_out=1):
     for i, (t, y_t, cp, pred, scores, regressor_preds) in enumerate(zip(*results)):
         fig, ax = plt.subplots(2, 1, figsize=(15, 10))
         ax[0].plot(t, y_t, label="data")
@@ -24,5 +24,7 @@ def plot_cusum_results(results, threshold, filename=None):
         plt.tight_layout()
         if filename:
             plt.savefig(filename + f"plot_{i}")
-        plt.show()
-        
+        plt.show(block=False)
+        plt.pause(time_out)
+        plt.close(fig)
+
