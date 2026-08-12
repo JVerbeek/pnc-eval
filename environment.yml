@@ -6,3 +6,6 @@ dependencies:
   - seaborn
   - scikit-learn
   - pyyaml
+  - pip
+  - pip:
+    - xgboost

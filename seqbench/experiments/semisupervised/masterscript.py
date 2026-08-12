@@ -84,7 +84,9 @@ if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
         "--generator-hyperparameters", os.path.join(SCRIPT_DIR, "data_config.yaml"),
-        "--regressor", "pyseq.models.regressors.random_forest_regression.AutoRegressiveRandomForest",
+        # "--regressor", "pyseq.models.regressors.random_forest_regression.AutoRegressiveRandomForest",
+        "--regressor", "pyseq.models.regressors.xgboost_regression.AutoRegressiveXGBoost",
+        "--regressor", "pyseq.models.regressors.xgboost_regression.MultiOutputXGBoost",
         "--window-slider-kwargs", os.path.join(SEQBENCH_DIR, "config", "window_slider.yaml"),
         "--thresholder-kwargs", os.path.join(SEQBENCH_DIR, "config", "wald-constant-thresholder.yaml"),
         "--scorer-kwargs", os.path.join(SEQBENCH_DIR, "config", "cusum.yaml"),
