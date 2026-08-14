@@ -61,7 +61,7 @@ def get_generator_object_from_config(config="pyseq_data/src/pyseq_data/example_c
     return ds
 
 
-def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
+def make_dataset(generator_hyperparameters, generator_name, set_name="train", experiment_name=""):
     # Check if data has been generated before:
 
     # Convert hyperparameter kwargs dict to a folder name
@@ -76,7 +76,7 @@ def make_dataset(generator_hyperparameters, generator_name, set_name="train"):
     else: # no hyperparameters provided, eenerator_kwargs.g. args.generator_hyperparameters is None
         generator_kwargs_str = "default"
 
-    generated_data_folder = os.path.join("seqbench", "generated_data", generator_name.replace('.', '_'), generator_kwargs_str)
+    generated_data_folder = os.path.join("data", generator_name.replace('.', '_'), generator_kwargs_str)
     print("Data folder: ", generated_data_folder)
 
     os.makedirs(generated_data_folder, exist_ok=True)

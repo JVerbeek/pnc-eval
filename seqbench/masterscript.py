@@ -4,7 +4,7 @@ import sys
 
 sys.path.append("/home/janneke/src/pnc-eval/seqbench/")
 import numpy as np
-from utils import handle_open_file, import_object_from_string
+from utils import handle_open_file, import_object_from_string, write_results
 from plotting import plot_cusum_results
 
 from pyseq.models.base_stack_detector import StackDetector
@@ -68,24 +68,32 @@ def main():
     )
 
     parser.add_argument(
+        "--experiment-name",
+        default="test",
+        help="Name of experiment"
+    )
+
+    parser.add_argument(
         "--write-results",
         action="store_true",
         help="Whether to write test results to file (default: False)",
     )
 
+
     args = parser.parse_args()
+    dirname = str.replace(os.path.dirname(__file__), "..", "").replace("///", "/")
+    results_path = dirname + "/results/"
 
-    results_path = os.path.dirname(__file__)+"/results/"
-
+    print("Initiating experiment", args.experiment_name)
     # Use the generator and model
-    # Parse model and generator kwargs from YAML 
+    # Parse model and generator kwargs from YAML
     # If the files are not provided, use empty dicts as kwargs
     # Load regressor, window-slider, and thresholder hyperparameters
     regressor_kwargs = handle_open_file(args.regressor_hyperparameters)
     window_slider_kwargs = handle_open_file(args.window_slider_kwargs)
     thresholder_kwargs = handle_open_file(args.thresholder_kwargs)
     scorer_kwargs = handle_open_file(args.scorer_kwargs)
-    
+
     # Import window slider, regressor, thresholder, scorer
     regressor_cls = import_object_from_string(args.regressor)
     regressor = regressor_cls(**regressor_kwargs)
@@ -96,11 +104,19 @@ def main():
     thresholder_cls = import_object_from_string(args.thresholder)
     thresholder = thresholder_cls(**thresholder_kwargs)
 
-    sd = StackDetector(window_slider=window_slider, regressor=regressor, 
-                       thresholder=thresholder, 
-                       scorer=scorer)
+    sd = StackDetector(
+        window_slider=window_slider,
+        regressor=regressor,
+        thresholder=thresholder,
+        scorer=scorer,
+    )
 
-    t_train, y_train, cps, dataset_name = make_dataset(generator_hyperparameters=args.generator_hyperparameters, generator_name="test", set_name="train")
+    t_train, y_train, cps, dataset_name = make_dataset(
+        generator_hyperparameters=args.generator_hyperparameters,
+        generator_name="test",
+        set_name="train",
+        experiment_name=args.experiment_name
+    )
 
     # Training (only if model is fittable)
     if regressor.fittable:
@@ -110,45 +126,24 @@ def main():
 
     # Testing
     print("Testing phase...")
-    pred_test, scores_test, reg_pred_test = sd.predict(y_s=y_train, return_scores=True, return_regressor_predictions=True)
+    pred_test, scores_test, reg_pred_test = sd.predict(
+        y_s=y_train, return_scores=True, return_regressor_predictions=True
+    )
 
     # optional test plotting:
     if args.plot_test_results:
-        plot_cusum_results([t_train, y_train, cps, pred_test, scores_test, reg_pred_test], sd.thresholder.alpha, filename=results_path + "/figures/" + dataset_name + "_")
+        plot_cusum_results(
+            [t_train, y_train, cps, pred_test, scores_test, reg_pred_test],
+            sd.thresholder.alpha,
+            filename=results_path + "figures/" + dataset_name + "_",
+        )
 
     if args.write_results:
-        write_results(results_path + dataset_name, [pred_test, scores_test, reg_pred_test])
+        write_results(
+            results_path + "/raw/results-" + dataset_name, [pred_test, scores_test, reg_pred_test]
+        )
+
 
 # For testing purposes, provide defaults if not running as a script
 if __name__ == "__main__":
-    sys.argv = [
-        sys.argv[0],
-        "--generator-hyperparameters",
-        "seqbench/experiments/inductive-bias/data_config.yaml",
-        "--window-slider-kwargs",
-        "seqbench/config/window_slider.yaml",
-        "--regressor",
-        "pyseq.models.regressors.linear_regression.LinearRegressionModel",
-        "--thresholder-kwargs",
-        "seqbench/config/wald-constant-thresholder.yaml",
-        "--scorer-kwargs",
-        "seqbench/config/cusum.yaml",
-        "--plot-test-results",
-    ]
-    main()
-
-    sys.argv = [
-        sys.argv[0],
-        "--generator-hyperparameters",
-        "seqbench/experiments/inductive-bias/data_config.yaml",
-        "--window-slider-kwargs",
-        "seqbench/config/window_slider.yaml",
-        "--regressor", 
-        "pyseq.models.regressors.gaussian_process.GPRModel",
-        "--thresholder-kwargs",
-        "seqbench/config/wald-constant-thresholder.yaml",
-        "--scorer-kwargs",
-        "seqbench/config/cusum.yaml",
-        "--plot-test-results",
-    ]
     main()
