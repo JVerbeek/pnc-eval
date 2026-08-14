@@ -15,7 +15,7 @@ def handle_open_file(filename):
             return {}
         with open(filename, "r") as f:
                 kwargs = yaml.safe_load(f)
-        return kwargs
+        return {} if kwargs is None else kwargs
     except FileNotFoundError:
         print(f"File not found for {filename}. Did you supply the correct path?", file=sys.stderr)
         sys.exit()
