@@ -113,7 +113,6 @@ def main():
 
     t_train, y_train, cps, dataset_name = make_dataset(
         generator_hyperparameters=args.generator_hyperparameters,
-        generator_name="test",
         set_name="train",
         experiment_name=args.experiment_name
     )

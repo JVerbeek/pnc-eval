@@ -61,7 +61,7 @@ def get_generator_object_from_config(config="pyseq_data/src/pyseq_data/example_c
     return ds
 
 
-def make_dataset(generator_hyperparameters, generator_name, set_name="train", experiment_name=""):
+def make_dataset(generator_hyperparameters, generator_name="", set_name="train", experiment_name=""):
     # Check if data has been generated before:
 
     # Convert hyperparameter kwargs dict to a folder name
