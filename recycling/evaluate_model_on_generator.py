@@ -9,6 +9,8 @@ import numpy as np
 from pyseq.models.base_stack_detector import StackDetector
 from run_dataset_generation import make_dataset
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 def import_object_from_string(dotted_path):
     """Import an object (function, class, etc.) from a dotted module path like 'module.submodule.func'."""
@@ -120,13 +122,13 @@ def main():
 if __name__ == "__main__":
     sys.argv = [
         sys.argv[0],
-        "--generator-hyperparameters", "seqbench/config/example_datagenerator_config.yaml",
+        "--generator-hyperparameters", os.path.join(SCRIPT_DIR, "config", "example_datagenerator_config.yaml"),
         #"--regressor", "pyseq.models.regressors.linear_regression.LinearRegressionModel",
-        "--window-slider-kwargs", "seqbench/config/window_slider.yaml",
+        "--window-slider-kwargs", os.path.join(SCRIPT_DIR, "config", "window_slider.yaml"),
         "--regressor", "pyseq.models.regressors.random_forest_regression.MultiOutputRandomForest",
         #"--regressor-hyperparameters", "path/to/model_hyperparams.yaml",
-        "--thresholder-kwargs", "seqbench/config/wald-constant-thresholder.yaml",
-        "--scorer-kwargs", "seqbench/config/cusum.yaml",
+        "--thresholder-kwargs", os.path.join(SCRIPT_DIR, "config", "wald-constant-thresholder.yaml"),
+        "--scorer-kwargs", os.path.join(SCRIPT_DIR, "config", "cusum.yaml"),
         "--plot-test-results"
     ]
     main()

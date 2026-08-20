@@ -11,7 +11,7 @@ def transform_for_autoregressive_fit(X, y):
     _, prediction_window_size = y.shape
 
     X_ar = np.zeros((n_windows * prediction_window_size, window_size))
-    y_ar = np.flatten(y, order='C')
+    y_ar = y.flatten(order='C')
 
     for i in range(n_windows):
         for j in range(prediction_window_size):
