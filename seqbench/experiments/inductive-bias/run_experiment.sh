@@ -9,18 +9,40 @@
 #SBATCH --error=%A-%a.err
 #SBATCH --array=0-1
 
-python3 ../../masterscript.py --generator-hyperparameters experiment-config/data_config.yaml \
-    --window-slider-kwargs ../../config/window_slider.yaml\
+find_project_root() {
+  local current_dir="$PWD"
+  while [[ "$current_dir" != "/" ]]; do
+    if [[ -f "$current_dir/.seqbench_marker" ]]; then
+      echo "$current_dir"
+      return 0
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+  echo "Error: Could not find project root" >&2
+  return 1
+}
+
+
+PROJECT_ROOT=$(find_project_root) || exit 1
+EXPERIMENTS_DIR="experiments"
+SCRIPT_DIR="${0%/*}"
+
+# Extract the experiment folder name
+EXPERIMENT_NAME=$(basename "$SCRIPT_DIR")
+
+python3 "$PROJECT_ROOT/masterscript.py" --generator-hyperparameters $PROJECT_ROOT/"$EXPERIMENTS_DIR"/"$EXPERIMENT_NAME"/experiment-config/data_config.yaml \
+    --window-slider-kwargs "$PROJECT_ROOT/config/window_slider.yaml"\
     --regressor pyseq.models.regressors.linear_regression.LinearRegressionModel\
-    --thresholder-kwargs experiment-config/wald-constant-thresholder.yaml\
-    --scorer-kwargs experiment-config/cusum.yaml\
-    --experiment-name "inductive-bias"\
+    --thresholder-kwargs "$EXPERIMENTS_DIR"/"$EXPERIMENT_NAME"/experiment-config/wald-constant-thresholder.yaml\
+    --scorer-kwargs "$EXPERIMENTS_DIR"/"$EXPERIMENT_NAME"/experiment-config/cusum.yaml\
+    --experiment-name "$EXPERIMENT_NAME"\
     --write-results
 
-python3 ../../masterscript.py --generator-hyperparameters experiment-config/data_config.yaml \
-    --window-slider-kwargs ../../config/window_slider.yaml\
+python3 "$PROJECT_ROOT/masterscript.py" --generator-hyperparameters $PROJECT_ROOT/"$EXPERIMENTS_DIR"/"$EXPERIMENT_NAME"/experiment-config/data_config.yaml \
+    --window-slider-kwargs "$PROJECT_ROOT/config/window_slider.yaml"\
     --regressor pyseq.models.regressors.gaussian_process.GPRModel\
-    --thresholder-kwargs experiment-config/wald-constant-thresholder.yaml\
-    --scorer-kwargs experiment-config/cusum.yaml\
-    --experiment-name "inductive-bias"\
+    --thresholder-kwargs "$EXPERIMENTS_DIR"/"$EXPERIMENT_NAME"/experiment-config/wald-constant-thresholder.yaml\
+    --scorer-kwargs "$EXPERIMENTS_DIR"/"$EXPERIMENT_NAME"/experiment-config/cusum.yaml\
+    --experiment-name "$EXPERIMENT_NAME"\
     --write-results
+

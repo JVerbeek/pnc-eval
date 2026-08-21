@@ -78,6 +78,7 @@ def make_dataset(
     if generator_hyperparameters:
         # Create a concise, readable string from generator_kwargs for folder naming
         # Use a hash of the kwargs string for a robust folder
+        print(generator_hyperparameters)
         generator_kwargs = get_generator_kwargs(generator_hyperparameters)
         generator_kwargs_str = json.dumps(generator_kwargs, sort_keys=True)
         hash_object = hashlib.sha256(generator_kwargs_str.encode())
@@ -89,7 +90,12 @@ def make_dataset(
         generator_kwargs_str = "default"
 
     generated_data_folder = os.path.join(
-        "data", generator_name.replace(".", "_"), generator_kwargs_str
+        SCRIPT_DIR,
+        "experiments",
+        experiment_name,
+        "data",
+        generator_name.replace(".", "_"),
+        generator_kwargs_str,
     )
     print("Data folder: ", generated_data_folder)
 
@@ -125,7 +131,3 @@ def make_dataset(
     y = [(y_instance - y_instance.mean()) / y_instance.std() for y_instance in y]
 
     return t, y, cps, generator_kwargs_str
-
-
-if __name__ == "__main__":
-    print(get_generator_object_from_config().mean.get_value())

@@ -55,6 +55,7 @@ def plot_cusum_results(results, threshold, filename=None, show=False, time_out=1
         if filename:
             plt.savefig(filename + f"plot_{i}")
         if show:
+            plt.clf()
             plt.show(block=False)
             plt.pause(time_out)
             plt.close(fig)
