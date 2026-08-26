@@ -26,11 +26,9 @@ EXPERIMENT_DIR = f"{SEQBENCH_DIR}/experiments/{args.experiment_name}"
 RESULTS_DIR = f"{EXPERIMENT_DIR}/results/"
 results_raw_dir = RESULTS_DIR + "raw/"
 os.makedirs(f"{RESULTS_DIR}analysis", exist_ok=True)
-print(EXPERIMENT_DIR, RESULTS_DIR)
 
 # Load in changepoints
 for result in os.listdir(results_raw_dir):
-    print(result)
     hashname = result.split("-")[-1].split(".")[0]  # should be the hash
     result_npz = np.load(f"{results_raw_dir}/{result}/results.npz")
     ground_truth = np.load(f"{EXPERIMENT_DIR}/data/{hashname}/cps_train.npz")["cps"]
