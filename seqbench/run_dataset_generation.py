@@ -127,7 +127,7 @@ def make_dataset(
         y = np.load(y_file)["y"]
         cps = np.load(cps_file)["cps"]
 
-    # Currently always standardize the y data, could implement generic preprocessing later?
-    y = [(y_instance - y_instance.mean()) / y_instance.std() for y_instance in y]
+    # # Currently always standardize the y data, could implement generic preprocessing later?
+    # y = [(y_instance - y_instance.mean()) / y_instance.std() for y_instance in y]
 
     return t, y, cps, generator_kwargs_str
