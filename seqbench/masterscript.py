@@ -202,17 +202,15 @@ def main():
     plt.plot(reg_pred_test[2])
     plt.show()
     # optional test plotting:
-    print("args plot test results", args.plot_test_results)
-    if args.plot_test_results:
-        plot_cusum_results(
-            [t_train, y_train, cps, pred_test, scores_test, reg_pred_test],
-            sd.thresholder.alpha,
-            filename=results_path + "/figures/" + dataset_name + "_", show=True
-        )
+    # if args.plot_test_results:
+    #     plot_cusum_results(
+    #         [t_train, y_train, cps, pred_test, scores_test, reg_pred_test],
+    #         sd.thresholder.alpha,
+    #         filename=results_path + "/figures/" + dataset_name + "_", show=True
+    #     )
     
     os.makedirs(results_path + f"/raw/{dataset_name}", exist_ok=True)
-    print(os.path.exists(results_path + f"/raw/{dataset_name}"))
-    print(results_path + f"/raw/{dataset_name}")
+
     if args.write_results:
         write_results(
             results_path + "/raw/" + dataset_name, [pred_test, scores_test, reg_pred_test]
