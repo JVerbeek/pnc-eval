@@ -61,11 +61,6 @@ for result in os.listdir(results_raw_dir):
         ys = np.load(f"{EXPERIMENT_DIR}/data/{hashname}/y_train.npz")["y"]
         ts = np.load(f"{EXPERIMENT_DIR}/data/{hashname}/t_train.npz")["t"]
         cps = np.load(f"{EXPERIMENT_DIR}/data/{hashname}/cps_train.npz")["cps"]
-        import matplotlib.pyplot as plt
-        plt.plot(ys[2])
-        plt.plot(result_npz["regression_predictions"][2])
-        plt.title("When loading in analysis stuff")
-        plt.show()
  
         plot_cusum_results(
             [
@@ -77,6 +72,6 @@ for result in os.listdir(results_raw_dir):
                 result_npz["regression_predictions"],
             ],
             alpha,  # weak point, how do we know that every experiment has that threshold?
-            filename=RESULTS_DIR + "/figures/" + hashname + "",
+            filename=RESULTS_DIR + "/figures/" + hashname + "/",
             show=args.show_figures,
         )

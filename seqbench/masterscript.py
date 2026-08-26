@@ -197,10 +197,6 @@ def main():
         y_s=y_train, return_scores=True, return_regressor_predictions=True
     )
 
-    plt.title("Before plotting or result writing")
-    plt.plot(y_train[2])
-    plt.plot(reg_pred_test[2])
-    plt.show()
     # optional test plotting:
     # if args.plot_test_results:
     #     plot_cusum_results(
