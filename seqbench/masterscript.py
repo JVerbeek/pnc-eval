@@ -103,7 +103,7 @@ def main():
 
     args = parser.parse_args()
 
-    results_path = os.path.dirname(__file__) + "/results/"
+    results_path = os.path.dirname(__file__) + "/experiments/" + args.experiment_name + "/results/"
     os.makedirs(results_path + "/figures/", exist_ok=True)
 
     # Use the generator and model
@@ -182,6 +182,8 @@ def main():
         set_name="train",
         experiment_name=args.experiment_name,
     )
+    plt.show()
+
 
     # Training (only if model is fittable)
     if regressor.fittable:
@@ -195,17 +197,25 @@ def main():
         y_s=y_train, return_scores=True, return_regressor_predictions=True
     )
 
+    plt.title("Before plotting or result writing")
+    plt.plot(y_train[2])
+    plt.plot(reg_pred_test[2])
+    plt.show()
     # optional test plotting:
+    print("args plot test results", args.plot_test_results)
     if args.plot_test_results:
         plot_cusum_results(
             [t_train, y_train, cps, pred_test, scores_test, reg_pred_test],
             sd.thresholder.alpha,
-            filename=results_path + "/figures/" + dataset_name + "_",
+            filename=results_path + "/figures/" + dataset_name + "_", show=True
         )
-
+    
+    os.makedirs(results_path + f"/raw/{dataset_name}", exist_ok=True)
+    print(os.path.exists(results_path + f"/raw/{dataset_name}"))
+    print(results_path + f"/raw/{dataset_name}")
     if args.write_results:
         write_results(
-            results_path + dataset_name, [pred_test, scores_test, reg_pred_test]
+            results_path + "/raw/" + dataset_name, [pred_test, scores_test, reg_pred_test]
         )
 
 

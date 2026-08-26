@@ -26,11 +26,13 @@ EXPERIMENT_DIR = f"{SEQBENCH_DIR}/experiments/{args.experiment_name}"
 RESULTS_DIR = f"{EXPERIMENT_DIR}/results/"
 results_raw_dir = RESULTS_DIR + "raw/"
 os.makedirs(f"{RESULTS_DIR}analysis", exist_ok=True)
+print(EXPERIMENT_DIR, RESULTS_DIR)
 
 # Load in changepoints
 for result in os.listdir(results_raw_dir):
+    print(result)
     hashname = result.split("-")[-1].split(".")[0]  # should be the hash
-    result_npz = np.load(f"{results_raw_dir}/{result}")
+    result_npz = np.load(f"{results_raw_dir}/{result}/results.npz")
     ground_truth = np.load(f"{EXPERIMENT_DIR}/data/{hashname}/cps_train.npz")["cps"]
     detections = result_npz["predictions"]
     indices = np.arange(len(detections[0]), dtype=int)
@@ -50,13 +52,19 @@ for result in os.listdir(results_raw_dir):
     results_df.to_csv(f"{RESULTS_DIR}analysis/analysis_{hashname}.csv")
 
     if args.generate_figures:
-        os.makedirs(results_dir + "figures/" + hashname, exist_ok=True)
+        os.makedirs(RESULTS_DIR + "figures/" + hashname, exist_ok=True)
         alpha = handle_open_file(
             f"{EXPERIMENT_DIR}/experiment-config/wald-constant-thresholder.yaml"
         )["alpha"]
         ys = np.load(f"{EXPERIMENT_DIR}/data/{hashname}/y_train.npz")["y"]
         ts = np.load(f"{EXPERIMENT_DIR}/data/{hashname}/t_train.npz")["t"]
         cps = np.load(f"{EXPERIMENT_DIR}/data/{hashname}/cps_train.npz")["cps"]
+        import matplotlib.pyplot as plt
+        plt.plot(ys[2])
+        plt.plot(result_npz["regression_predictions"][2])
+        plt.title("When loading in analysis stuff")
+        plt.show()
+ 
         plot_cusum_results(
             [
                 ts,

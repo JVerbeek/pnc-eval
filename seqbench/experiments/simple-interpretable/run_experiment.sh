@@ -36,4 +36,4 @@ python3 "$PROJECT_ROOT/masterscript.py" --generator-hyperparameters $PROJECT_ROO
     --thresholder-kwargs "$EXPERIMENTS_DIR"/"$EXPERIMENT_NAME"/experiment-config/wald-constant-thresholder.yaml\
     --scorer-kwargs "$EXPERIMENTS_DIR"/"$EXPERIMENT_NAME"/experiment-config/cusum.yaml\
     --experiment-name "$EXPERIMENT_NAME"\
-    --write-results
+    --write-results --plot-test-results

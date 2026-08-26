@@ -3,12 +3,11 @@ import numpy as np
 
 
 def plot_cusum_results(results, threshold, filename=None, show=False, time_out=1):
-    for i, (t, y_t, cp, pred, scores, regressor_preds) in enumerate(zip(*results)):
+    for i, (t, y_t, cp, pred, scores, regressor_preds) in enumerate(zip(*results)): 
         fig, ax = plt.subplots(2, 1, figsize=(15, 10))
-        ax[0].plot(t, y_t, label="data")
+        ax[0].plot(y_t, label="data")
         # ax.plot(X_t[:len(cp)], cp, linestyle="-", linewidth=3, color="r", label="changepoint locs")
         ax[0].plot(
-            t,
             regressor_preds,
             linestyle="-",
             linewidth=3,
@@ -55,7 +54,6 @@ def plot_cusum_results(results, threshold, filename=None, show=False, time_out=1
         if filename:
             plt.savefig(filename + f"plot_{i}")
         if show:
-            plt.clf()
             plt.show(block=False)
             plt.pause(time_out)
             plt.close(fig)
