@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 from plotting import plot_cusum_results
+import sys
 from utils import handle_open_file
 from metrics import (
     false_positives,
@@ -30,7 +31,7 @@ os.makedirs(f"{RESULTS_DIR}analysis", exist_ok=True)
 # Load in changepoints
 for result in os.listdir(results_raw_dir):
     hashname = result.split("-")[-1].split(".")[0]  # should be the hash
-    result_npz = np.load(f"{results_raw_dir}/{result}")
+    result_npz = np.load(f"{results_raw_dir}/{result}/results.npz")
     ground_truth = np.load(f"{EXPERIMENT_DIR}/data/{hashname}/cps_train.npz")["cps"]
     detections = result_npz["predictions"]
     indices = np.arange(len(detections[0]), dtype=int)
@@ -49,14 +50,18 @@ for result in os.listdir(results_raw_dir):
     # Write away metrics to some file format
     results_df.to_csv(f"{RESULTS_DIR}analysis/analysis_{hashname}.csv")
 
+    if args.show_figures and not args.generate_figures:
+        print("Cannot show figures (-s) without generating them (-g).")
+        sys.exit()
     if args.generate_figures:
-        os.makedirs(results_dir + "figures/" + hashname, exist_ok=True)
+        os.makedirs(RESULTS_DIR + "figures/" + hashname, exist_ok=True)
         alpha = handle_open_file(
             f"{EXPERIMENT_DIR}/experiment-config/wald-constant-thresholder.yaml"
         )["alpha"]
         ys = np.load(f"{EXPERIMENT_DIR}/data/{hashname}/y_train.npz")["y"]
         ts = np.load(f"{EXPERIMENT_DIR}/data/{hashname}/t_train.npz")["t"]
         cps = np.load(f"{EXPERIMENT_DIR}/data/{hashname}/cps_train.npz")["cps"]
+ 
         plot_cusum_results(
             [
                 ts,
@@ -67,6 +72,6 @@ for result in os.listdir(results_raw_dir):
                 result_npz["regression_predictions"],
             ],
             alpha,  # weak point, how do we know that every experiment has that threshold?
-            filename=RESULTS_DIR + "/figures/" + hashname + "",
+            filename=RESULTS_DIR + "/figures/" + hashname + "/",
             show=args.show_figures,
         )

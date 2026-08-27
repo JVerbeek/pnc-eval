@@ -20,7 +20,7 @@ def handle_open_file(filename):
         print(f"File not found for {filename}. Did you supply the correct path?", file=sys.stderr)
         sys.exit()
 
-def write_results(filename, results):
+def write_results(dirname, results):
     """ Writes results to file with name matching dataset hex name.
     results (list): list of results to write away. Minimally contains
     predictions, but can contain scores and regression predictions. 
@@ -29,7 +29,8 @@ def write_results(filename, results):
     ### Construct results_dict adaptively
     names = ["predictions", "scores", "regression_predictions"]
     results_dict = {names[i]: r for i, r in enumerate(results)}
-    
     # Save results (unpack results_dict to kwargs, so that we have named arrays)
-    np.savez(filename, **results_dict)
+    np.savez(dirname+"/results.npz", **results_dict)
+    import os
+    print("Wrote results to", dirname, os.path.isfile(dirname+"results.npz"))
     return
