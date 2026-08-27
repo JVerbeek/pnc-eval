@@ -205,11 +205,13 @@ def main():
     #         filename=results_path + "/figures/" + dataset_name + "_", show=True
     #     )
     
-    os.makedirs(results_path + f"/raw/{dataset_name}", exist_ok=True)
+    raw_dataset_path = os.path.join(results_path, "raw", dataset_name)
+
+    os.makedirs(raw_dataset_path, exist_ok=True)
 
     if args.write_results:
         write_results(
-            results_path + "/raw/" + dataset_name, [pred_test, scores_test, reg_pred_test]
+            raw_dataset_path, [pred_test, scores_test, reg_pred_test]
         )
 
 

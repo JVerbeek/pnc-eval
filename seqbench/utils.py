@@ -2,6 +2,7 @@ import importlib
 import yaml
 import sys
 import numpy as np
+import os
 
 def import_object_from_string(dotted_path):
     """Import an object (function, class, etc.) from a dotted module path like 'module.submodule.func'."""
@@ -30,7 +31,7 @@ def write_results(dirname, results):
     names = ["predictions", "scores", "regression_predictions"]
     results_dict = {names[i]: r for i, r in enumerate(results)}
     # Save results (unpack results_dict to kwargs, so that we have named arrays)
-    np.savez(dirname+"/results.npz", **results_dict)
-    import os
-    print("Wrote results to", dirname, os.path.isfile(dirname+"results.npz"))
+    result_path = os.path.join(dirname, "results.npz")
+    np.savez(result_path, **results_dict)
+    print("Wrote results to", dirname, os.path.isfile(result_path))
     return
